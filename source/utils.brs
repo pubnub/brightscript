@@ -19,16 +19,24 @@ Function implode(glue, pieces)
     return result
 end Function
 
-Function createPath(config) as String
+Function createQueryString(queryParams as Object) as String
+    return "a=10&b=15"
+end Function
+
+Function createPath(config as Object) as String
     path = ""
 
     if config.secure then
         path = path + "https://"
     else
         path = path + "http://"
-    endif
+    end if
 
     path = path + config.origin + "/" + implode("/", config.path)
+
+    if config.query <> invalid then
+        path = path + "?" + createQueryString(config.query)
+    end if
 
     return path
 end Function
@@ -58,6 +66,6 @@ Function HTTPRequest(config as Object, callback as Function)
                 callback(status, invalid, config.callback)
             endif
         end while
-    endif
+    end if
     return invalid
 end Function
