@@ -4,6 +4,7 @@ Function createRequestConfig(m as Object) as Object
     return {
         secure: m.secure
         origin: m.origin
+        logVerbosity: m.logVerbosity
     }
 end Function
 

@@ -1,13 +1,13 @@
 
-
 Function PubNub(config as Object) as Object
     instance = {
-        publishKey: config.publishKey,
-        subscribeKey: config.subscribeKey,
-        authKey: config.authKey,
-        uuid: config.uuid,
-        origin: config.origin,
+        publishKey: config.publishKey
+        subscribeKey: config.subscribeKey
+        authKey: config.authKey
+        uuid: config.uuid
+        origin: config.origin
         secure: config.secure
+        logVerbosity: config.logVerbosity
     }
 
     if instance.secure = invalid then
@@ -22,9 +22,20 @@ Function PubNub(config as Object) as Object
         instance.uuid = CreateObject("roDeviceInfo").GetRandomUUID()
     end if
 
+    if instance.logVerbosity = invalid then
+        instance.logVerbosity = false
+    end if
+
     ' start mounting endpoints
     instance.publish = Publish
     instance.time = Time
+    instance.history = History
+
+    ' presence
+    instance.whereNow = WhereNow
+    instance.setState
+    ' end presence
+
     ' end mounting endpoints
 
     return instance
