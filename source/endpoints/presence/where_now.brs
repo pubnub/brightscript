@@ -13,7 +13,7 @@ Function WhereNow(config as Object, callback as Function)
         "uuid"
     ]
 
-    if config.uuid != invalid then
+    if config.uuid <> invalid then
         requestSetup.path.push(config.uuid)
     else
         requestSetup.path.push(m.uuid)

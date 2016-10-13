@@ -5,6 +5,7 @@ Function createRequestConfig(m as Object) as Object
         secure: m.secure
         origin: m.origin
         logVerbosity: m.logVerbosity
+        query: {}
     }
 end Function
 
@@ -21,7 +22,13 @@ Function implode(glue, pieces)
 end Function
 
 Function createQueryString(queryParams as Object) as String
-    return "a=10&b=15"
+    chunks = []
+
+    For Each pairKey In queryParams
+      chunks.push(pairKey + "=" + queryParams[pairKey])
+    End For
+
+    return implode("&", chunks)
 end Function
 
 Function createPath(config as Object) as String

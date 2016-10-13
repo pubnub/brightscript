@@ -33,7 +33,7 @@ Function PubNub(config as Object) as Object
 
     ' presence
     instance.whereNow = WhereNow
-    instance.setState
+
     ' end presence
 
     ' end mounting endpoints

@@ -14,21 +14,19 @@ Function History(config as Object, callback as Function)
         config.channel
     ]
 
-    requestSetup.query = {}
-
-    if config.start != invalid then
+    if config.start <> invalid then
         requestSetup.query.start = config.start
     end if
 
-    if config.end != invalid then
+    if config.end <> invalid then
         request.query.end = config.end
     end if
 
-    if config.count != invalid then
+    if config.count <> invalid then
         request.query.count = config.count
     end if
 
-    if config.reverse != invalid then
+    if config.reverse <> invalid then
         request.query.reverse = config.reverse
     end if
 
