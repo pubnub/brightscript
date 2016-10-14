@@ -39,10 +39,10 @@
 
   pubnub.publish({
       channel: "hello",
-      start: "first timetoken (optional)",
-      end: "last timetoken (optional)",
-      reverse: "boolean to reverse the order (optional)",
-      count: "integer to return max results (defaults to 100)"
+      start: < integer, first timetoken (optional)> ,
+      end: <integer, last timetoken (optional)>,
+      reverse: <boolean, reverse the order (optional)",
+      count: <integer, to return max results (defaults to 100)>
   }, historyCallback)
 
 ```
@@ -79,7 +79,7 @@ the new timetoken needs to be passed to the subscribe
   end Function
 
   pubnub.subscribeEndpoint({
-      timetoken: < new timetoken>
+      timetoken: <integer, new timetoken>
       channels: ["ch1", "ch2", "ch3"],
       channelGroups: ["cg1", "cg2", "cg3"]
   }, subscribeCallback)
