@@ -31,6 +31,15 @@ Function PubNub(config as Object) as Object
     instance.time = Time
     instance.history = History
 
+    ' channel groups
+    instance.channelGroups = {
+      listGroups: ChannelGroupListGroups
+      listChannels: ChannelGroupListChannels
+      addChannels: ChannelGroupAddChannels
+      removeChannels: ChannelGroupRemoveChannels
+      deleteGroup: ChannelGroupDeleteGroup
+    };
+
     ' push
     instance.push = {
       addChannels: PushAddChannels

@@ -18,12 +18,7 @@ Function PushRemoveChannels(config as Object, callback as Function)
 
     PushRemoveChannelsCallback = Function (status as Object, response as Object, callback as Function)
         status.operation = "PNPushNotificationEnabledChannelsOperation"
-
-        if status.error then
-            callback(status, invalid)
-        else
-            callback(status, response)
-        end if
+        callback(status, invalid)
     end Function
 
     HTTPRequest(requestSetup, PushRemoveChannelsCallback)
