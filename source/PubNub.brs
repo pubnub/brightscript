@@ -1,33 +1,16 @@
-
 Function PubNub(config as Object) as Object
     instance = {
         version: "0.0.1"
         publishKey: config.publishKey
         subscribeKey: config.subscribeKey
         authKey: config.authKey
-        uuid: config.uuid
-        origin: config.origin
-        secure: config.secure
-        logVerbosity: config.logVerbosity
+        uuid: pnDefaultValue(config.uuid, CreateObject("roDeviceInfo").GetRandomUUID())
+        origin: pnDefaultValue(config.origin, "pubsub.pubnub.com")
+        secure: pnDefaultValue(config.secure, false)
+        logVerbosity: pnDefaultValue(config.logVerbosity, false)
         listenerManager = PubNubListenerManager()
         subscriptionManager = PubNubSubscriptionManager({ listenerManager: listenerManager })
     }
-
-    if instance.secure = invalid then
-        instance.secure = false
-    end if
-
-    if instance.origin = invalid then
-        instance.origin = "pubsub.pubnub.com"
-    end if
-
-    if instance.uuid = invalid then
-        instance.uuid = CreateObject("roDeviceInfo").GetRandomUUID()
-    end if
-
-    if instance.logVerbosity = invalid then
-        instance.logVerbosity = false
-    end if
 
     ' start mounting endpoints
     instance.Publish = Publish

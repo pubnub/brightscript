@@ -1,16 +1,8 @@
-
-
-Function Time(config as Object, callback as Function)
-    urlt = CreateObject("roUrlTransfer")
+sub Time(callback as Function)
     requestSetup = createRequestConfig(m)
-    requestSetup.callback = callback
+    requestSetup.append({"callback": callback, "path": ["time", "0"]})
 
-    requestSetup.path = [
-        "time",
-        "0"
-    ]
-
-    PublishCallback = Function (status as Object, response as Object, callback as Function)
+    TimeCallback = Function (status as Object, response as Object, callback as Function)
         status.operation = "PNTimeOperation"
 
         if status.error then
@@ -21,5 +13,4 @@ Function Time(config as Object, callback as Function)
     end Function
 
     HTTPRequest(requestSetup, PublishCallback)
-
-end Function
+end sub

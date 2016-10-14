@@ -1,10 +1,6 @@
-
-
 Function History(config as Object, callback as Function)
-    urlt = CreateObject("roUrlTransfer")
     requestSetup = createRequestConfig(m)
     requestSetup.callback = callback
-
     requestSetup.path = [
         "v2",
         "history",
@@ -14,21 +10,14 @@ Function History(config as Object, callback as Function)
         config.channel
     ]
 
-    if config.start <> invalid then
-        requestSetup.query.start = config.start.ToStr()
+    query = {count: pnMinValue(100, config.count)}
+    if config.start <> invalid then query.start = config.start
+    if config.end <> invalid then query.end = config.end
+    if config.includeTimetoken <> invalid then
+       query.include_token = config.includeTimetoken
     end if
-
-    if config.end <> invalid then
-        request.query.end = config.end.ToStr()
-    end if
-
-    if config.count <> invalid then
-        request.query.count = config.count.ToStr()
-    end if
-
-    if config.reverse <> invalid then
-        request.query.reverse = config.reverse
-    end if
+    if config.reverse <> invalid then query.reverse = config.reverse
+    requestSetup.append({"query": query})
 
     HistoryCallback = Function (status as Object, response as Object, callback as Function)
         status.operation = "PNHistoryOperation"
@@ -41,5 +30,4 @@ Function History(config as Object, callback as Function)
     end Function
 
     HTTPRequest(requestSetup, HistoryCallback)
-
 end Function

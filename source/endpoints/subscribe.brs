@@ -1,76 +1,42 @@
+Function Subscribe(config as Object) as Object
 
-Function Subscribe(config as Object, callback as Function)
-    urlt = CreateObject("roUrlTransfer")
-    requestSetup = createRequestConfig(m)
-    requestSetup.callback = callback
+    m.subscribe = function(config as Object)
+        if config.channels <> invalid OR config.channelGroups <> invalid then
+          m.subscriptionManager.subscribe(config)
+          end if
+    end function
 
-    stringifiedChannelList = ","
-
-    if config.channels <> invalid then
-      stringifiedChannelList = implode(",", config.channels)
-    end if
-
-    if config.timetoken <> invalid then
-        requestSetup.query.tt = config.timetoken.ToStr()
-    end if
-
-    if config.region <> invalid then
-        requestSetup.query.tr = config.region
-    end if
-
-    if config.filterExpression <> invalid then
-        requestSetup.query["filter-expr"] = config.filterExpression
-    end if
-
-    if config.channelGroups <> invalid then
-        requestSetup.query["channel-group"] = implode(",", config.channelGroups)
-    end if
-
-    requestSetup.path = [
-        "v2",
-        "subscribe",
-        m.subscribeKey,
-        urlt.Escape(stringifiedChannelList),
-        "0"
-    ]
-
-    SubscribeCallback = Function (status as Object, response as Object, callback as Function)
-        status.operation = "PNSubscribeOperation"
-
-        if status.error then
-            callback(status, invalid)
-        else
-            messages = []
-            metadata = {
-                timetoken: response.t.t,
-                region: response.t.r
-            }
-
-            For Each rawMessage In response.m
-              publishMetaData = {
-                publishTimetoken: rawMessage.p.t,
-                region: rawMessage.p.r
-              }
-
-              parsedMessage = {
-                shard: rawMessage.a,
-                subscriptionMatch: rawMessage.b,
-                channel: rawMessage.c,
-                payload: rawMessage.d,
-                flags: rawMessage.f,
-                issuingClientId: rawMessage.i,
-                subscribeKey: rawMessage.k,
-                originationTimetoken: rawMessage.o,
-                publishMetaData: publishMetaData
-              }
-
-              messages.push(parsedMessage)
-            End For
-
-            callback(status, { messages: messages, metadata: metadata })
+    m.unsubscribe = function(config as Object)
+        if config.channels <> invalid OR config.channelGroups <> invalid then
+          m.subscriptionManager.unsubscribe(config)
         end if
-    end Function
+    end function
 
-    HTTPRequest(requestSetup, SubscribeCallback)
+    m.unsubscribeAll = function()
+        m.subscriptionManager.unsubscribeAll()
+    end function
 
+    m.channels = function() as Object
+        return m.subscriptionManager.channels()
+    end function
+
+    m.presenceEnabledForChannel = Function (channel as String) as Boolean
+        enabled = false
+        if channel <> invalid then
+          enabled = m.subscriptionManager.presenceEnabledForChannel(channel)
+        end if
+        return enabled
+    end function
+
+    m.channelGroups = function() as Object
+        return m.subscriptionManager.channelGroups()
+    end function
+
+    m.presenceEnabledForChannelGroup = Function (channelGroup as String) as Boolean
+        enabled = false
+        if channelGroup <> invalid then
+          enabled = m.subscriptionManager.presenceEnabledForChannelGroup(channelGroup)
+        end if
+        return enabled
+    end function
 end Function
