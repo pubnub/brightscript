@@ -24,7 +24,7 @@
     print "response", response
   end Function
 
-  request.publish({ channel: "hello", message: { such: "wow"} }, publishCallback)
+  pubnub.publish({ channel: "hello", message: { such: "wow"} }, publishCallback)
 
 ```
 
@@ -37,7 +37,7 @@
     print "response", response
   end Function
 
-  request.publish({
+  pubnub.publish({
       channel: "hello",
       start: "first timetoken (optional)",
       end: "last timetoken (optional)",
@@ -49,6 +49,9 @@
 
 ## Subscribing
 
+
+subscriptions always start with a timetoken 0 which will return the last timetoken of the message.
+
 ```brightscript
 
   subscribeCallback = Function(status as Object, response as Object)
@@ -56,13 +59,34 @@
     print "response", response
   end Function
 
-  request.subscribe({
-      timetoken: "<insert integer time token>"
+  pubnub.subscribeEndpoint({
+      timetoken: 0
       channels: ["ch1", "ch2", "ch3"],
       channelGroups: ["cg1", "cg2", "cg3"]
   }, subscribeCallback)
 
 ```
+
+as part of the response from the initial subscription, a new timetoken will be returned inside the response as `response.metadata.timetoken`
+the new timetoken needs to be passed to the subscribe
+
+
+```brightscript
+
+  subscribeCallback = Function(status as Object, response as Object)
+    print "status", status
+    print "response", response
+  end Function
+
+  pubnub.subscribeEndpoint({
+      timetoken: < new timetoken>
+      channels: ["ch1", "ch2", "ch3"],
+      channelGroups: ["cg1", "cg2", "cg3"]
+  }, subscribeCallback)
+
+```
+
+if the subscribe call times out or errors, restart the subscribe call with the same timetoken.
 
 ## Push Notifications
 
@@ -74,7 +98,7 @@
     print "status", status
   end Function
 
-  request.push.AddChannels({
+  pubnub.push.AddChannels({
       channels: ["ch1", "ch2", "ch3"],
       device: "<device id>"
       type: "<gcm | apns | mpns>"
@@ -90,7 +114,7 @@
     print "status", status
   end Function
 
-  request.push.RemoveChannels({
+  pubnub.push.RemoveChannels({
       channels: ["ch1", "ch2", "ch3"],
       device: "<device id>"
       type: "<gcm | apns | mpns>"
@@ -106,7 +130,7 @@
     print "status", status
   end Function
 
-  request.push.DeleteDevice({
+  pubnub.push.DeleteDevice({
       device: "<device id>"
       type: "<gcm | apns | mpns>"
   }, callback)
@@ -121,7 +145,7 @@
     print "status", status
   end Function
 
-  request.push.ListChannels({
+  pubnub.push.ListChannels({
       device: "<device id>"
       type: "<gcm | apns | mpns>"
   }, callback)
@@ -138,7 +162,7 @@
     print "status", status
   end Function
 
-  request.ChannelGroups.AddChannels({
+  pubnub.ChannelGroups.AddChannels({
       channels: ["ch1", "ch2", "ch3"],
       channelGroup: "cg1"
   }, callback)
@@ -153,7 +177,7 @@
     print "status", status
   end Function
 
-  request.ChannelGroups.RemoveChannels({
+  pubnub.ChannelGroups.RemoveChannels({
       channels: ["ch1", "ch2", "ch3"],
       channelGroup: "cg1"
   }, callback)
@@ -169,7 +193,7 @@
     print "response", response
   end Function
 
-  request.ChannelGroups.DeleteGroup({
+  pubnub.ChannelGroups.DeleteGroup({
       channelGroup: "cg1"
   }, callback)
 ```
@@ -183,7 +207,7 @@
     print "response", response
   end Function
 
-  request.ChannelGroups.ListChannels({
+  pubnub.ChannelGroups.ListChannels({
       channelGroup: "cg1"
   }, callback)
 ```
@@ -197,5 +221,5 @@
     print "response", response
   end Function
 
-  request.ChannelGroups.ListGroups({}, callback)
+  pubnub.ChannelGroups.ListGroups({}, callback)
 ```
