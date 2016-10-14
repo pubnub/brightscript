@@ -1,6 +1,7 @@
 
 Function PubNub(config as Object) as Object
     instance = {
+        version: "0.0.1"
         publishKey: config.publishKey
         subscribeKey: config.subscribeKey
         authKey: config.authKey
@@ -8,6 +9,8 @@ Function PubNub(config as Object) as Object
         origin: config.origin
         secure: config.secure
         logVerbosity: config.logVerbosity
+        listenerManager = PubNubListenerManager()
+        subscriptionManager = PubNubSubscriptionManager({ listenerManager: listenerManager })
     }
 
     if instance.secure = invalid then
@@ -27,34 +30,39 @@ Function PubNub(config as Object) as Object
     end if
 
     ' start mounting endpoints
-    instance.publish = Publish
-    instance.time = Time
-    instance.history = History
+    instance.Publish = Publish
+    instance.Time = Time
+    instance.History = History
 
     ' channel groups
-    instance.channelGroups = {
-      listGroups: ChannelGroupListGroups
-      listChannels: ChannelGroupListChannels
-      addChannels: ChannelGroupAddChannels
-      removeChannels: ChannelGroupRemoveChannels
-      deleteGroup: ChannelGroupDeleteGroup
+    instance.ChannelGroups = {
+      ListGroups: ChannelGroupListGroups
+      ListChannels: ChannelGroupListChannels
+      AddChannels: ChannelGroupAddChannels
+      RemoveChannels: ChannelGroupRemoveChannels
+      DeleteGroup: ChannelGroupDeleteGroup
     };
 
     ' push
-    instance.push = {
-      addChannels: PushAddChannels
-      removeChannels: PushRemoveChannels
-      deleteDevice: PushRemoveDevice
-      listChannels: PushListChannels
+    instance.Push = {
+      AddChannels: PushAddChannels
+      RemoveChannels: PushRemoveChannels
+      DeleteDevice: PushRemoveDevice
+      ListChannels: PushListChannels
     }
     ' end Push
 
-    ' presence
-    instance.whereNow = WhereNow
+    instance.subscribeEndpoint = Subscribe
 
+    ' presence
+    instance.WhereNow = WhereNow
     ' end presence
 
     ' end mounting endpoints
+
+    instance.AddListener = instance.listenerManager.addListener
+    instance.RemoveListener = instance.listenerManager.removeListener
+    instance.RemoveAllListeners = instance.listenerManager.removeAllListeners
 
     return instance
 end Function

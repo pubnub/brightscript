@@ -1,11 +1,21 @@
 
 
 Function createRequestConfig(m as Object) as Object
+
+    queryParams = {
+      pnsdk: "Pubnub-Roku/" + m.version
+      uuid: m.uuid
+    }
+
+    if m.authKey <> invalid then
+        queryParams.auth = m.authKey
+    end if
+
     return {
         secure: m.secure
         origin: m.origin
         logVerbosity: m.logVerbosity
-        query: {}
+        query: queryParams
     }
 end Function
 
@@ -41,10 +51,7 @@ Function createPath(config as Object) as String
     end if
 
     path = path + config.origin + "/" + implode("/", config.path)
-
-    if config.query <> invalid then
-        path = path + "?" + createQueryString(config.query)
-    end if
+    path = path + "?" + createQueryString(config.query)
 
     return path
 end Function

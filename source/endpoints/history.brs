@@ -15,15 +15,15 @@ Function History(config as Object, callback as Function)
     ]
 
     if config.start <> invalid then
-        requestSetup.query.start = config.start
+        requestSetup.query.start = config.start.ToStr()
     end if
 
     if config.end <> invalid then
-        request.query.end = config.end
+        request.query.end = config.end.ToStr()
     end if
 
     if config.count <> invalid then
-        request.query.count = config.count
+        request.query.count = config.count.ToStr()
     end if
 
     if config.reverse <> invalid then
