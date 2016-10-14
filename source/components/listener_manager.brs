@@ -51,3 +51,4 @@ Function PubNubListenerManager() as Object
     end Function
 
     return instance
+end Function

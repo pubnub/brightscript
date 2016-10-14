@@ -19,3 +19,4 @@ Function PubNubSubscriptionManager(config as Object) as Object
     end Function
 
     return instance
+end Function

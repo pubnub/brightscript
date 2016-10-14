@@ -9,9 +9,10 @@ Function PubNub(config as Object) as Object
         origin: config.origin
         secure: config.secure
         logVerbosity: config.logVerbosity
-        listenerManager = PubNubListenerManager()
-        subscriptionManager = PubNubSubscriptionManager({ listenerManager: listenerManager })
     }
+
+    instance.listenerManager = PubNubListenerManager()
+    instance. subscriptionManager = PubNubSubscriptionManager({ listenerManager: instance.listenerManager })
 
     if instance.secure = invalid then
         instance.secure = false
@@ -41,7 +42,7 @@ Function PubNub(config as Object) as Object
       AddChannels: ChannelGroupAddChannels
       RemoveChannels: ChannelGroupRemoveChannels
       DeleteGroup: ChannelGroupDeleteGroup
-    };
+    }
 
     ' push
     instance.Push = {
