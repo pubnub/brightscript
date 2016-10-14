@@ -31,6 +31,15 @@ Function PubNub(config as Object) as Object
     instance.time = Time
     instance.history = History
 
+    ' push
+    instance.push = {
+      addChannels: PushAddChannels
+      removeChannels: PushRemoveChannels
+      deleteDevice: PushRemoveDevice
+      listChannels: PushListChannels
+    }
+    ' end Push
+
     ' presence
     instance.whereNow = WhereNow
 
