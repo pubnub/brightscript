@@ -7,7 +7,6 @@ Function PubNubSubscriptionManager(config as Object) as Object
         _channelGroups: []
         channelGroups: function():return m._channelGroups:end function
         _presenceChannelGroups: []
-        listenerManager: config.listenerManager
         _state: "initialized"
         _filterExpression: invalid
         _timetoken: 0
@@ -16,38 +15,107 @@ Function PubNubSubscriptionManager(config as Object) as Object
         _lastRegion: invalid
         _overrideTimetoken: invalid
         _currentRequest: invalid
-    }.append(m)
+    }
+    instance.append(config)
+
+    instance._parseEnvelopeInformation = function(information as Object) as Object
+        return {
+            shard: information.a
+            flags: information.f
+            senderIdenrifier: information.i
+            sequence: information.s
+            subscribeKey: information.k
+            replicationMap: information.r
+            eatAfterReading: information.ear
+            metadata: information.u
+            waypoints: information.w
+        }
+    end function
+
+    instance._parseEvent = function(event as Object) as Object
+        parsedEvent = {}
+        isPresenceEvent = pnStringHasSuffix(event.c, "-pnpres")
+        channel = event.c.replace("-pnpres", "")
+        subscriptionMatch = event.b
+        if subscriptionMatch = channel then subscriptionMatch = invalid
+        parsedEvent.envelope = m._parseEnvelopeInformation(event)
+        parsedEvent.channel = channel
+        if subscriptionMatch <> invalid then
+            parsedEvent.subscription = subscriptionMatch
+        else
+            parsedEvent.subscription = channel
+        end if
+        if event.o <> invalid then timetokenObject = event.o else timetokenObject = event.p
+        if timetokenObject.r <> invalid then
+            parsedEvent.timetoken = timetokenObject.t
+            parsedEvent.region = timetokenObject.t
+        end if
+        payload = event.d
+        if isPresenceEvent then
+            presence = {
+                presenceEvent: pnDefaultValue(payload.action, "interval")
+                presence: {timetoken: payload.timestamp
+                    occupancy: pnDefaultValue(payload.occupancy, 0)
+                }
+            }
+            if payload.uuid then presence.uuid = payload.uuid
+            if payload.data then presence.state = payload.data
+        else
+            parsedEvent.message = payload
+        end if
+
+        return parsedEvent
+    end function
+
+    instance._parseServiceResponse = function(response as Object) as Object
+        timetokenObject = response.t
+        timetoken = timetokenObject.t
+        region = timetokenObject.r
+        feedEvents = response.m
+        if feedEvents.count() > 0
+            events = []
+            for each event in feedEvents
+                parsedEvent = m._parseEvent(event)
+                if parsedEvent.timetoken = invalid then
+                    parsedEvent.timetoken = timetoken
+                end if
+                events.push(parsedEvent)
+            end for
+            feedEvents = events
+        end if
+        return {"events": feedEvents, "timetoken": timetoken, "region": region}
+    end function
 
     instance._addChannels = function(channels as Object, withPresence as Boolean)
         if channels <> invalid
-            for channel in channels
+            for each channel in channels
                 isPresenceChannel = pnStringHasSuffix(channel, "-pnpres")
                 if isPresenceChannel then
                     objects = m._presenceChannels
                 else
                     objects = m._channels
                 end if
-                if withPresence AND !isPresenceChannel then
+                if withPresence AND isPresenceChannel = false then
                     presenceChannel = channel + "-pnpres"
-                    if !pnArrayContainsValue(m._presenceChannels, presenceChannel) then
+                    if pnArrayContainsValue(m._presenceChannels, presenceChannel) = false then
                         m._presenceChannels.push(presenceChannel)
                     end if
                 end if
-                if !pnArrayContainsValue(objects, channel) then objects.push(channel)
+                if pnArrayContainsValue(objects, channel) = false then objects.push(channel)
             end for
         end if
     end function
 
     instance._removeChannels = function(channels as Object, withPresence as Boolean)
         if channels <> invalid
-            for channel in channels
+            for each channel in channels
                 isPresenceChannel = pnStringHasSuffix(channel, "-pnpres")
                 if isPresenceChannel then
                     objects = m._presenceChannels
                 else
                     objects = m._channels
                 end if
-                if withPresence AND !isPresenceChannel then
+                if withPresence AND isPresenceChannel = false then
                     presenceChannel = channel + "-pnpres"
                     pnRemoveValueFromArray(m._presenceChannels, presenceChannel)
                 end if
@@ -58,7 +126,8 @@ Function PubNubSubscriptionManager(config as Object) as Object
 
     ' Create list of channel objects from regular and presence channel names
     instance._channelObjects = function() as Object
-        objects = [].append(m._channels)
+        objects = []
+        objects.append(m._channels)
         objects.append(m._presenceChannels)
 
         return objects
@@ -66,34 +135,34 @@ Function PubNubSubscriptionManager(config as Object) as Object
 
     instance._addChannelGroups = function(groups as Object, withPresence as Boolean)
         if groups <> invalid
-            for group in groups
+            for each group in groups
                 isPresenceGroup = pnStringHasSuffix(group, "-pnpres")
                 if isPresenceGroup then
                     objects = m._presenceChannelGroups
                 else
                     objects = m._channelGroups
                 end if
-                if withPresence AND !isPresenceGroup then
+                if withPresence AND isPresenceGroup = false then
                     presenceGroup = group + "-pnpres"
-                    if !pnArrayContainsValue(m._presenceChannelGroups, presenceGroup) then
+                    if pnArrayContainsValue(m._presenceChannelGroups, presenceGroup) = false then
                         m._presenceChannelGroups.push(_presenceChannelGroups)
                     end if
                 end if
-                if !pnArrayContainsValue(objects, group) then objects.push(group)
+                if pnArrayContainsValue(objects, group) = false then objects.push(group)
             end for
         end if
     end function
 
     instance._removeChannelGroups = function(groups as Object, withPresence as Boolean)
         if groups <> invalid
-            for group in groups
+            for each group in groups
                 isPresenceGroup = pnStringHasSuffix(group, "-pnpres")
                 if isPresenceGroup then
                     objects = m._presenceChannelGroups
                 else
                     objects = m._channelGroups
                 end if
-                if withPresence AND !isPresenceGroup then
+                if withPresence AND isPresenceGroup = false then
                     presenceGroup = group + "-pnpres"
                     pnRemoveValueFromArray(m._presenceChannelGroups, presenceGroup)
                 end if
@@ -104,14 +173,16 @@ Function PubNubSubscriptionManager(config as Object) as Object
 
     ' Create list of channel group objects from regular and presence channel group names
     instance._channelGroupObjects = function() as Object
-        objects = m._channelGroups
+        objects = []
+        objects.append(m._channelGroups)
         objects.append(m._presenceChannelGroups)
 
         return objects
     end function
 
     instance._allObjects = function() as Object
-        objects = m._channelObjects()
+        objects = []
+        objects.append(m._channelObjects())
         objects.append(m._channelGroupObjects())
 
         return objects
@@ -139,7 +210,7 @@ Function PubNubSubscriptionManager(config as Object) as Object
 
         ' Ensure what there is some data objects to which client should be able
         ' to subscribe
-        if m._allObjects().count > 0 then
+        if m._allObjects().count() > 0 then
             urlt = CreateObject("roUrlTransfer")
             m._overrideTimetoken = config.timetoken
             if config.filterExpression <> invalid then
@@ -147,7 +218,9 @@ Function PubNubSubscriptionManager(config as Object) as Object
             end if
             if initialSubscribe then
                 if m._timetoken > 0 then m._lastTimetoken = m._timetoken
-                if m._region <> invalid AND m._region > 0 then m._lastRegion = m._region
+                if m._region <> invalid AND m._region > 0 then
+                    m._lastRegion = m._region
+                end if
                 m._timetoken = 0
                 m._region = invalid
             end if
@@ -159,7 +232,9 @@ Function PubNubSubscriptionManager(config as Object) as Object
                 tr: m._region
                 "filter-expr": m._filterExpression
             }
-            if m._filterExpression.len() = 0 then query.delete("filter-expr")
+            if m._filterExpression <> invalid AND m._filterExpression.len() = 0 then
+                query.delete("filter-expr")
+            end if
 
             ' Compose list of channel groups which can be used in request
             channelGroupsForSubscription = m._channelGroupObjects()
@@ -178,17 +253,23 @@ Function PubNubSubscriptionManager(config as Object) as Object
                 "0"
             ]
 
-            SubscribeCallback = Function (status as Object, response as Object, completionCallback as Function)
-                m.currentRequest = invalid
+            SubscribeCallback = Function (status as Object, response as Object, completionCallback as Dynamic, context as Object)
+                print "Context from callback: ",context
+                print "Is initial subscribe? :",initialSubscribe
+                context._currentRequest = invalid
                 status.operation = "PNSubscribeOperation"
                 if status.error then
-                    m._handleFailedSubscriptionStatus(status, initialSubscribe)
+                    context._handleFailedSubscriptionStatus(status, initialSubscribe)
                 else
-                    status.append(serviceResponseParser.parse(response))
-                    m._handleSuccessSubscriptionStatus(status, initialSubscribe)
+                    parsedResponse = context._parseServiceResponse(response)
+                    print "Parser service response: ",parsedResponse
+                    status.append(parsedResponse)
+                    context._handleSuccessSubscriptionStatus(status, initialSubscribe)
                 end if
             end function
-            m._currentRequest = HTTPRequest(requestSetup, SubscribeCallback)
+            print "Launch HTTP request"
+            m._currentRequest = HTTPRequest(requestSetup, SubscribeCallback, m)
+            print "'m' from subscribe: ",m
         else
             m._timetoken = 0
             m._lastTimetoken = 0
@@ -197,7 +278,7 @@ Function PubNubSubscriptionManager(config as Object) as Object
         end if
     end Function
 
-    instance.unsubscribe = Function (config as Object, callback = invalid as Function)
+    instance.unsubscribe = Function (config as Object, callback = invalid as Dynamic)
         if config.channels <> invalid OR config.channelGroups <> invalid then
             ' Add new channel and groups to subscription list if required
             withPresence = pnDefaultValue(config.withPresence, false)
@@ -219,7 +300,7 @@ Function PubNubSubscriptionManager(config as Object) as Object
             if config.channelGroups <> invalid then
                 channelGroupsForUnsubscription = []
                 for each group in config.channelGroups
-                    if !pnStringHasSuffix(group, "-pnpres") then
+                    if pnStringHasSuffix(group, "-pnpres") = false then
                         channelGroupsForUnsubscription.push(group)
                     end if
                 end for
@@ -231,7 +312,7 @@ Function PubNubSubscriptionManager(config as Object) as Object
             channelsForUnsubscription = []
             if config.channels <> invalid then
                 for each channel in config.channels
-                    if !pnStringHasSuffix(channel, "-pnpres") then
+                    if pnStringHasSuffix(channel, "-pnpres") = false then
                         channelsForUnsubscription.push(channel)
                     end if
                 end for
@@ -246,12 +327,12 @@ Function PubNubSubscriptionManager(config as Object) as Object
                 urlt.Escape(stringifiedChannelsList),
                 "leave"
             ]
-            UnsubscribeCallback = Function (status as Object, response as Object, completionCallback as Function)
+            UnsubscribeCallback = Function (status as Object, response as Object, completionCallback as Dynamic)
                 m.currentRequest = invalid
                 status.operation = "PNUnsubscribeOperation"
                 status.error = false
                 if completionCallback = invalid then
-                    if m._allObjects().count > 0 then
+                    if m._allObjects().count() > 0 then
                         m.listenerManager.announceStatus(status)
                     else
                         m._handleStateChange("disconnected")
@@ -264,13 +345,13 @@ Function PubNubSubscriptionManager(config as Object) as Object
     end Function
 
     instance.unsubscribeAll = Function ()
-      if m._channelObjects().count > 0 OR m._channelGroupObjects().count > 0 then
+      if m._channelObjects().count() > 0 OR m._channelGroupObjects().count() > 0 then
           shouldInformObservers = true
-          if m._channelObjects().count > 0 AND m._channelGroupObjects().count > 0 then
+          if m._channelObjects().count() > 0 AND m._channelGroupObjects().count() > 0 then
               shouldInformObservers = false
           end if
           channelsUnsubscriptionCallback = invalid
-          if !shouldInformObservers then
+          if shouldInformObservers = false then
               channelsUnsubscriptionCallback = function ()
                   m.unsubscribeAll()
               end function
@@ -301,7 +382,7 @@ Function PubNubSubscriptionManager(config as Object) as Object
         shouldUseNewTimetoken = true
         shouldOverrideTimeToken = false
         if initial AND m._overrideTimetoken <> invalid then shouldOverrideTimeToken = true
-        shouldUseLastTimetoken = !shouldOverrideTimeToken
+        shouldUseLastTimetoken = (shouldOverrideTimeToken = false)
         if shouldOverrideTimeToken AND m._lastTimetoken <> invalid AND m._lastTimetoken > 0 then
             shouldUseNewTimetoken = false
             m._timetoken = m._lastTimetoken
@@ -310,10 +391,12 @@ Function PubNubSubscriptionManager(config as Object) as Object
             m._lastRegion = invalid
         end if
 
-        if !initial AND m._timetoken = 0 then shouldUseNewTimetoken = false
+        if initial = false AND m._timetoken = 0 then shouldUseNewTimetoken = false
         if shouldUseNewTimetoken then
             if m._timetoken > 0 then m._lastTimetoken = m._timetoken
-            if m._region <> invalid AND m._region > 0 then m._lastRegion = m._region
+            if m._region <> invalid AND m._region > 0 then
+                m._lastRegion = m._region
+            end if
             if shouldOverrideTimeToken then
                 m._timetoken = m._overrideTimetoken
             else
@@ -325,7 +408,7 @@ Function PubNubSubscriptionManager(config as Object) as Object
     end function
 
     instance._handleLiveFeedEvents = function(events as Object)
-        for event in events
+        for each event in events
             if event.presenceEvent = invalid
                 m.listenerManager.announceMessage(event)
             else
@@ -345,7 +428,7 @@ Function PubNubSubscriptionManager(config as Object) as Object
                 shouldHandleTransition = true
             end if
             category = "PNConnectedCategory"
-            if !shouldHandleTransition AND m._state = "disconnectedUnexpectedly" then
+            if shouldHandleTransition = false AND m._state = "disconnectedUnexpectedly" then
                 targetState = "connected"
                 category = "PNReconnectedCategory"
                 shouldHandleTransition = true
@@ -372,80 +455,6 @@ Function PubNubSubscriptionManager(config as Object) as Object
             m._state = targetState
         end if
     end function
-
-    serviceResponseParser = {
-        parse: function(response as Object) as Object
-            timetokenObject = response.t
-            timetoken = timetokenObject.t
-            region = timetokenObject.r
-            feedEvents = response.m
-            if feedEvents.count() > 0
-                events = []
-                for each event in feedEvents
-                    parsedEvent = eventParser.parse(event)
-                    if parsedEvent.timetoken = invalid then
-                        parsedEvent.timetoken = timetoken
-                    end if
-                    events.push(parsedEvent)
-                end for
-                feedEvents = events
-            end if
-            return {"events": feedEvents, "timetoken": timetoken, "region": region}
-        end function
-    }
-
-    eventParser = {
-        parse: function(event as Object) as Object
-            parsedEvent = {}
-            isPresenceEvent = pnStringHasSuffix(event.c, "-pnpres")
-            channel = event.c.replace("-pnpres", "")
-            subscriptionMatch = event.b
-            if subscriptionMatch = channel then subscriptionMatch = invalid
-            parsedEvent.envelope = envelopeInformationParser.parse(event)
-            parsedEvent.channel = channel
-            if subscriptionMatch <> invalid then
-                parsedEvent.subscription = subscriptionMatch
-            else
-                parsedEvent.subscription = channel
-            end if
-            if event.o <> invalid then timetokenObject = event.o else timetokenObject = event.p
-            if timetokenObject.r <> invalid then
-                parsedEvent.timetoken = timetokenObject.t
-                parsedEvent.region = timetokenObject.t
-            end if
-            payload = event.d
-            if isPresenceEvent then
-                presence = {
-                    presenceEvent: pnDefaultValue(payload.action, "interval")
-                    presence: {timetoken: payload.timestamp
-                        occupancy: pnDefaultValue(payload.occupancy, 0)
-                    }
-                }
-                if payload.uuid then presence.uuid = payload.uuid
-                if payload.data then presence.state = payload.data
-            else
-                parsedEvent.message = payload
-            end if
-
-            return parsedEvent
-        end function
-    }
-
-    envelopeInformationParser = {
-        parse: function(information as Object) as Object
-            return {
-                shard: information.a
-                flags: information.f
-                senderIdenrifier: information.i
-                sequence: information.s
-                subscribeKey: information.k
-                replicationMap: information.r
-                eatAfterReading: information.ear
-                metadata: information.u
-                waypoints: information.w
-            }
-        end function
-    }
 
     return instance
 end Function

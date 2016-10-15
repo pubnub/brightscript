@@ -72,7 +72,7 @@ Function createQueryString(queryParams as Object) as String
 
     For Each key In queryParams
       value = queryParams[key]
-      if key <> invalid then chunks.push(pairKey + "=" + key.ToStr())
+      if value <> invalid then chunks.push(key + "=" + value.ToStr())
     End For
 
     return implode("&", chunks)
@@ -95,11 +95,11 @@ function createRequest(config as Object) as Object
     request.InitClientCertificates()
     request.RetainBodyOnError(true)
     request.SetUrl(createRequestURL(config))
-
+    print "Request URL: ",request.GetUrl()
     return request
 end function
 
-Function HTTPRequest(config as Object, callback as Function) as Object
+Function HTTPRequest(config as Object, callback as Function, context = invalid as Object) as Object
     request = createRequest(config)
     port = CreateObject("roMessagePort")
     request.SetMessagePort(port)
@@ -115,12 +115,20 @@ Function HTTPRequest(config as Object, callback as Function) as Object
                 status.code = code
                 if code = 200 then status.error = false else status.error = true
                 json = ParseJSON(response.GetString())
-                callback(status, json, config.callback)
+                if context <> invalid then
+                    callback(status, json, config.callback, context)
+                else
+                    callback(status, json, config.callback)
+                end if
                 exit while
             else if response = invalid then
                 status.error = true
                 request.AsyncCancel()
-                callback(status, invalid, config.callback)
+                if context <> invalid then
+                    callback(status, invalid, config.callback, context)
+                else
+                    callback(status, invalid, config.callback)
+                end if
                 exit while
             endif
         end while

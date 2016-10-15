@@ -1,26 +1,26 @@
-Function Subscribe(config as Object) as Object
+Function Subscribe(interface as Object) as Object
 
-    m.subscribe = function(config as Object)
+    interface.subscribe = function(config as Object)
         if config.channels <> invalid OR config.channelGroups <> invalid then
           m.subscriptionManager.subscribe(config)
           end if
     end function
 
-    m.unsubscribe = function(config as Object)
+    interface.unsubscribe = function(config as Object)
         if config.channels <> invalid OR config.channelGroups <> invalid then
           m.subscriptionManager.unsubscribe(config)
         end if
     end function
 
-    m.unsubscribeAll = function()
+    interface.unsubscribeAll = function()
         m.subscriptionManager.unsubscribeAll()
     end function
 
-    m.channels = function() as Object
+    interface.channels = function() as Object
         return m.subscriptionManager.channels()
     end function
 
-    m.presenceEnabledForChannel = Function (channel as String) as Boolean
+    interface.presenceEnabledForChannel = Function (channel as String) as Boolean
         enabled = false
         if channel <> invalid then
           enabled = m.subscriptionManager.presenceEnabledForChannel(channel)
@@ -28,11 +28,11 @@ Function Subscribe(config as Object) as Object
         return enabled
     end function
 
-    m.channelGroups = function() as Object
+    interface.channelGroups = function() as Object
         return m.subscriptionManager.channelGroups()
     end function
 
-    m.presenceEnabledForChannelGroup = Function (channelGroup as String) as Boolean
+    interface.presenceEnabledForChannelGroup = Function (channelGroup as String) as Boolean
         enabled = false
         if channelGroup <> invalid then
           enabled = m.subscriptionManager.presenceEnabledForChannelGroup(channelGroup)

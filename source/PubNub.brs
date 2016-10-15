@@ -8,9 +8,13 @@ Function PubNub(config as Object) as Object
         origin: pnDefaultValue(config.origin, "pubsub.pubnub.com")
         secure: pnDefaultValue(config.secure, false)
         logVerbosity: pnDefaultValue(config.logVerbosity, false)
-        listenerManager = PubNubListenerManager()
-        subscriptionManager = PubNubSubscriptionManager({ listenerManager: listenerManager })
     }
+
+    listenerManager = PubNubListenerManager()
+    subscriptionManagerConfig = {listenerManager: instance.listenerManager}
+    subscriptionManagerConfig.append(instance)
+    instance.listenerManager = PubNubListenerManager()
+    instance.subscriptionManager = PubNubSubscriptionManager(subscriptionManagerConfig)
 
     ' start mounting endpoints
     instance.Publish = Publish
@@ -24,7 +28,7 @@ Function PubNub(config as Object) as Object
       AddChannels: ChannelGroupAddChannels
       RemoveChannels: ChannelGroupRemoveChannels
       DeleteGroup: ChannelGroupDeleteGroup
-    };
+    }
 
     ' push
     instance.Push = {
@@ -35,14 +39,14 @@ Function PubNub(config as Object) as Object
     }
     ' end Push
 
-    instance.subscribeEndpoint = Subscribe
+    instance.subscribeEndpoint = Subscribe(instance)
 
     ' presence
     instance.WhereNow = WhereNow
     ' end presence
 
     ' end mounting endpoints
-
+    instance.append({AddListener: instance.listenerManager.addListener})
     instance.AddListener = instance.listenerManager.addListener
     instance.RemoveListener = instance.listenerManager.removeListener
     instance.RemoveAllListeners = instance.listenerManager.removeAllListeners

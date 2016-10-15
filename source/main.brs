@@ -8,6 +8,13 @@ sub main()
     ' Create and configure PubNub client instance.
     client = PubNub({ subscribeKey: "demo-36", publishKey: "demo-36", logVerbosity: true })
 
+    publishCallback = Function(status as Object, response as Object)
+       print "status", status
+       print "response", response
+    end Function
+
+    client.publish({ channel: "hello", message: { such: "wow"} }, publishCallback)
+
     ' PubNub events listener configuration.
     listener = {
         status: function(status):print "status", status:end function
@@ -15,14 +22,8 @@ sub main()
         message: function(message):print "message", message:end function
     }
     client.addListener(listener)
+    ' client.listenerManager.addListener(listener)
     client.subscribe({channels: ["hello"], withPresence: true})
-    '
-    ''publishCallback = Function(status as Object, response as Object)
-    ''    print "status", status
-    ''    print "response", response
-    'end Function
-
-    'client.publish({ channel: "hello", message: { such: "wow"} }, publishCallback)
     '
 
     'publishCallback = Function(status as Object, response as Object)
