@@ -1,6 +1,5 @@
 
 Function PushAddChannels(config as Object, callback as Function)
-    urlt = CreateObject("roUrlTransfer")
     requestSetup = createRequestConfig(m)
     requestSetup.callback = callback
 

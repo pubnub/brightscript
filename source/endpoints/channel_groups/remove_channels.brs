@@ -1,25 +1,42 @@
+' brief:      Remove existing channels from group managed by 'stream controller'.
+' discussion: 'Remove' list of channels from channel group.
+'
+' params   Object with values which should be used with API call.
+' callback Reference on function which will be responsible for received status object handling.
+'
+sub PNChannelGroupRemoveChannels(params as Object, callback = invalid as Dynamic, context = invalid as Dynamic)
+    ' Default values initialization
+    if type(callback) = "<uninitialized>" then callback = invalid
+    
+    ' Prepare information which should be used during REST API call URL preparation.
+    request = pn_channelGroupRemoveChannelRequest(params)
+    request.operation = PNOperationType().PNRemoveChannelsFromGroupOperation
+    
+    if PNArray(params.channels).isEmpty() = false then
+        callbackData = {callback: callback, context: context, params: params, client: m, func: "streamController.removeChannels"}
+        m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
+    else
+        ?"{WARN} Empty list of channels provided - this may lead for whole group deletion. Please use appropriate API call to explicitly delete group."
+    end if
+end sub
 
-Function ChannelGroupRemoveChannels(config as Object, callback as Function)
-    urlt = CreateObject("roUrlTransfer")
-    requestSetup = createRequestConfig(m)
-    requestSetup.callback = callback
 
-    requestSetup.path = [
-        "v1",
-        "channel-registration",
-        "sub-key",
-        m.subscribeKey,
-        "channel-group",
-        config.channelGroup,
-    ]
+REM ******************************************************
+REM
+REM Private functions
+REM
+REM ******************************************************
 
-    requestSetup.config.query.remove = implode(",", config.channels)
-
-    ChannelGroupRemoveChannelsCallback = Function (status as Object, response as Object, callback as Function)
-        status.operation = "PNRemoveChannelsFromGroupOperation"
-        callback(status, invalid)
-    end Function
-
-    HTTPRequest(requestSetup, ChannelGroupRemoveChannelsCallback)
-
-end Function
+' brief:  Prepare information which should be used during REST API call URL preparation.
+'
+' params  Object with values which should be used with API call.
+'
+function pn_channelGroupRemoveChannelRequest(params as Object) as Object
+    request = {path:{}, query: {}}
+    if PNString(params.group).isEmpty() = false then request.path["{channel-group}"] = PNString(params.group).escape()
+    if PNArray(params.channels).isEmpty() = false then
+        request.query["remove"] = PNChannel().namesForRequest(params.channels)
+    end if
+    
+    return request
+end function

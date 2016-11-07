@@ -1,55 +1,140 @@
-Function PubNub(config as Object) as Object
-    instance = {
-        version: "0.0.1"
-        publishKey: config.publishKey
-        subscribeKey: config.subscribeKey
-        authKey: config.authKey
-        uuid: pnDefaultValue(config.uuid, CreateObject("roDeviceInfo").GetRandomUUID())
-        origin: pnDefaultValue(config.origin, "pubsub.pubnub.com")
-        secure: pnDefaultValue(config.secure, false)
-        logVerbosity: pnDefaultValue(config.logVerbosity, false)
+function PubNub(config as Object, port as Object) as Object
+    this = {
+        private: {
+            config: {
+                version: "0.0.1"
+                origin: PNObject(config.origin).default("pubsub.pubnub.com")
+                publishKey: PNObject(config.publishKey).default("")
+                subscribeKey: PNObject(config.subscribeKey).default("")
+                authKey: config.authKey
+                uuid: PNObject(config.uuid).default(createObject("roDeviceInfo").getRandomUUID())
+                cipherKey: config.cipherKey
+                deviceID: createObject("roDeviceInfo").getDeviceUniqueId()
+                instanceID: createObject("roDeviceInfo").getRandomUUID()
+                subscribeMaximumIdleTime: PNObject(config.subscribeMaximumIdleTime).default(310)
+                nonSubscribeRequestTimeout: PNObject(config.nonSubscribeRequestTimeout).default(10)
+                presenceHeartbeatValue: config.presenceHeartbeatValue
+                presenceHeartbeatInterval: config.presenceHeartbeatInterval
+                notifyHeartbeatFailure: PNObject(config.notifyHeartbeatFailure).default(true)
+                notifyHeartbeatSuccess: PNObject(config.notifyHeartbeatSuccess).default(false)
+                secure: PNObject(config.secure).default(true)
+                keepTimeTokenOnListChange: PNObject(config.keepTimeTokenOnListChange).default(true)
+                restoreSubscription: PNObject(config.restoreSubscription).default(true)
+                catchUpOnSubscriptionRestore: PNObject(config.catchUpOnSubscriptionRestore).default(true)
+                requestMessageCountThreshold: PNObject(config.requestMessageCountThreshold).default(0)
+            }
+        }
     }
+    if PNObject(this.private.config.presenceHeartbeatValue).default(0) > 0 then
+        if PNObject(this.private.config.presenceHeartbeatInterval).default(0) = 0 then
+            interval% = this.private.config.presenceHeartbeatValue * 0.5
+            this.private.config.presenceHeartbeatInterval = interval%
+        end if
+    else
+        this.private.config.presenceHeartbeatValue = invalid
+        this.private.config.presenceHeartbeatInterval = invalid
+    end if
+    configuration = PNObject(this.private.config).copy(1)
+    this.private.publishSequenceManager = PNPublishSequence(configuration)
+    this.private.networkManager = PNNetwork(configuration, port)
+    this.private.listenerManager = PNStateListener(this)
+    this.private.stateManager = PNStateManager()
+    this.private.heartbeatManager = PNPNHeartbeatManager(configuration, this.private.networkManager, this.private.listenerManager, this.private.stateManager)
+    this.private.subscriptionManager = PNSubscribeManager(configuration, this.private.networkManager, this.private.listenerManager, this.private.stateManager, this.private.heartbeatManager)
+    this.private.heartbeatManager.private.setSubscribeManager(this.private.subscriptionManager)
+    
+    this.configuration = function() as Object
+        return PNObject(m.private.config).copy(1)
+    end function
 
-    listenerManager = PubNubListenerManager()
-    subscriptionManagerConfig = {listenerManager: instance.listenerManager}
-    subscriptionManagerConfig.append(instance)
-    instance.listenerManager = PubNubListenerManager()
-    instance.subscriptionManager = PubNubSubscriptionManager(subscriptionManagerConfig)
-
-    ' start mounting endpoints
-    instance.Publish = Publish
-    instance.Time = Time
-    instance.History = History
+'******************************************************
+'
+' Start mounting endpoints
+'
+'******************************************************
 
     ' channel groups
-    instance.ChannelGroups = {
-      ListGroups: ChannelGroupListGroups
-      ListChannels: ChannelGroupListChannels
-      AddChannels: ChannelGroupAddChannels
-      RemoveChannels: ChannelGroupRemoveChannels
-      DeleteGroup: ChannelGroupDeleteGroup
+    this.streamController = {
+        private: {
+            networkManager: this.private.networkManager
+            config: PNObject(this.private.config).copy(1)
+        }
+        listChannels: PNChannelGroupListChannels
+        addChannels: PNChannelGroupAddChannels
+        removeChannels: PNChannelGroupRemoveChannels
+        deleteGroup: PNChannelGroupDeleteGroup
     }
-
-    ' push
-    instance.Push = {
-      AddChannels: PushAddChannels
-      RemoveChannels: PushRemoveChannels
-      DeleteDevice: PushRemoveDevice
-      ListChannels: PushListChannels
-    }
-    ' end Push
-
-    instance.subscribeEndpoint = Subscribe(instance)
-
+    
+    this.history = PNHistory
+    this.publish = PNPublish
+    
     ' presence
-    instance.WhereNow = WhereNow
+    this.presence = {
+        private: {
+            networkManager: this.private.networkManager
+            stateManager: this.private.stateManager
+            config: PNObject(this.private.config).copy(1)
+        }
+        hereNow: PNPresenceHereNow
+        whereNow: PNPresenceWhereNow
+        setState: PNPresenceSetState
+        getState: PNPresenceGetState
+    }
     ' end presence
+    
+    this.time = PNTime
+
+    ' Subscribe
+    subscribeEndpoint = PNSubscribe(this)
+    this.subscribe = subscribeEndpoint.subscribe
+    this.cancelSubscriptionRetry = subscribeEndpoint.cancelSubscriptionRetry
+    this.unsubscribe = subscribeEndpoint.unsubscribe
+    this.unsubscribeAll = subscribeEndpoint.unsubscribeAll
+    this.channels = subscribeEndpoint.channels
+    this.presenceEnabledForChannel = subscribeEndpoint.presenceEnabledForChannel
+    this.channelGroups = subscribeEndpoint.channelGroups
+    this.presenceEnabledForChannelGroup = subscribeEndpoint.presenceEnabledForChannelGroup
+    ' end subscribe
+
 
     ' end mounting endpoints
-    instance.append({AddListener: instance.listenerManager.addListener})
-    instance.AddListener = instance.listenerManager.addListener
-    instance.RemoveListener = instance.listenerManager.removeListener
-    instance.RemoveAllListeners = instance.listenerManager.removeAllListeners
+    this.addListener = this.private.listenerManager.addListener
+    this.removeListener = this.private.listenerManager.removeListener
+    this.removeAllListeners = this.private.listenerManager.removeAllListeners
+    
+    this.handleMessage = pn_pubnubHandleMessage
+    this.destroy = pn_pubnubDestroy
 
-    return instance
-end Function
+    return this
+end function
+
+
+'******************************************************
+'
+' Private functions
+'
+'******************************************************
+
+' brief:      Handle single 'run-loop tick'.
+' discussion: Function called by PubNub client on every 'run-loop tick' to check whether some 
+'             scheduled data retrieval arrived and should be processed or not.
+'
+' message  Reference on event/message received from messages port object at 'run-loop tick'.
+' 
+function pn_pubnubHandleMessage(message = invalid as Dynamic) as Boolean
+    handled = m.private.networkManager.handleMessage(message)
+    m.private.subscriptionManager.handleMessage(message)
+    m.private.heartbeatManager.handleMessage(message)
+    
+    return handled
+end function
+
+' brief:      Destroy PubNub client 'instance'.
+' discussion: This function allow to break circular references for some components which has been 
+'             set during client initialization.
+'
+sub pn_pubnubDestroy()
+    m.private.subscriptionManager.destroy()
+    m.private.heartbeatManager.destroy()
+    m.private.listenerManager.destroy()
+end sub

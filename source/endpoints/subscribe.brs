@@ -1,42 +1,64 @@
-Function Subscribe(interface as Object) as Object
-
-    interface.subscribe = function(config as Object)
-        if config.channels <> invalid OR config.channelGroups <> invalid then
-          m.subscriptionManager.subscribe(config)
-          end if
+function PNSubscribe(client as Object) as Object
+    instance = {}
+    
+    instance.subscribe = function(params as Object)
+        params.withPresence = PNObject(params.withPresence).default(false)
+        if params.channels <> invalid OR params.channelGroups <> invalid then
+            if params.channels <> invalid AND params.channels.count() > 0 then 
+                m.private.subscriptionManager.private.addChannels(params.channels, params.withPresence)
+            end if
+            if params.channelGroups <> invalid AND params.channelGroups.count() > 0 then 
+                m.private.subscriptionManager.private.addChannelGroups(params.channelGroups, params.withPresence)
+            end if
+            m.private.subscriptionManager.subscribe(params)
+        end if
+    end function
+    
+    instance.cancelSubscriptionRetry = function()
+        m.private.subscriptionManager.cancelSubscriptionRetry()
     end function
 
-    interface.unsubscribe = function(config as Object)
-        if config.channels <> invalid OR config.channelGroups <> invalid then
-          m.subscriptionManager.unsubscribe(config)
+    instance.unsubscribe = function(params as Object)
+        params.withPresence = PNObject(params.withPresence).default(false)
+        if params.channels <> invalid OR params.channelGroups <> invalid then
+            if params.channels <> invalid AND params.channels.count() > 0 then 
+                m.private.subscriptionManager.private.removeChannels(params.channels, params.withPresence)
+            end if
+            if params.channelGroups <> invalid AND params.channelGroups.count() > 0 then 
+                m.private.subscriptionManager.private.removeChannelGroups(params.channelGroups, params.withPresence)
+            end if
+            m.private.subscriptionManager.unsubscribe(params)
         end if
     end function
 
-    interface.unsubscribeAll = function()
-        m.subscriptionManager.unsubscribeAll()
+    instance.unsubscribeAll = function()
+        m.private.subscriptionManager.unsubscribeAll()
     end function
 
-    interface.channels = function() as Object
-        return m.subscriptionManager.channels()
+    instance.channels = function() as Object
+        return m.private.subscriptionManager.channels()
     end function
 
-    interface.presenceEnabledForChannel = Function (channel as String) as Boolean
+    instance.presenceEnabledForChannel = function(channel as String) as Boolean
         enabled = false
         if channel <> invalid then
-          enabled = m.subscriptionManager.presenceEnabledForChannel(channel)
+          enabled = m.private.subscriptionManager.presenceEnabledForChannel(channel)
         end if
         return enabled
     end function
 
-    interface.channelGroups = function() as Object
-        return m.subscriptionManager.channelGroups()
+    instance.channelGroups = function() as Object
+        return m.private.subscriptionManager.channelGroups()
     end function
 
-    interface.presenceEnabledForChannelGroup = Function (channelGroup as String) as Boolean
+    instance.presenceEnabledForChannelGroup = function(channelGroup as String) as Boolean
         enabled = false
         if channelGroup <> invalid then
-          enabled = m.subscriptionManager.presenceEnabledForChannelGroup(channelGroup)
+          enabled = m.private.subscriptionManager.presenceEnabledForChannelGroup(channelGroup)
         end if
+        
         return enabled
     end function
-end Function
+    
+    return instance
+end function

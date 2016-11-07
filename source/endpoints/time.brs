@@ -1,16 +1,13 @@
-sub Time(callback as Function)
-    requestSetup = createRequestConfig(m)
-    requestSetup.append({"callback": callback, "path": ["time", "0"]})
-
-    TimeCallback = Function (status as Object, response as Object, callback as Function)
-        status.operation = "PNTimeOperation"
-
-        if status.error then
-            callback(status, invalid)
-        else
-            callback(status, { timetoken: response[0] })
-        end if
-    end Function
-
-    HTTPRequest(requestSetup, PublishCallback)
+' brief:  Retrieve PubNub's current time information.
+'
+' params   Object with values which should be used with API call.
+' callback Reference on function which will be responsible for received status and result objects 
+'          handling.
+'
+sub PNTime(params as Object, callback as Function, context = invalid as Dynamic)
+    ' Prepare information which should be used during REST API call URL preparation.
+    request = {path:{}, query: {}, operation: PNOperationType().PNTimeOperation}
+    
+    callbackData = {callback: callback, context: context, params: params, client: m, func: "time"}
+    m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
 end sub

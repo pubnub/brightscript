@@ -1,33 +1,59 @@
-Function History(config as Object, callback as Function)
-    requestSetup = createRequestConfig(m)
-    requestSetup.callback = callback
-    requestSetup.path = [
-        "v2",
-        "history",
-        "sub-key",
-        m.subscribeKey,
-        "channel",
-        config.channel
-    ]
+' brief:      Channel(s) and group(s) presence information access API.
+' discussion: Depending from configuration passed in 'params' PubNub client will retrieve presence
+'             information for single channel or group of channels. Additionally data verbosity can
+'             be changed by providing values for 'includeUUIDs' (whether response should include
+'             unique user identifiers or only number of participants) and 'includeState' (whether
+'             user's state information should be fetched or not).
+'
+' params   Object with values which should be used with API call.
+' callback Reference on function which will be responsible for received status and result objects 
+'          handling.
+'
+sub PNHistory(params as Object, callback as Function, context = invalid as Dynamic)
+    ' Default values initialization
+    pn_historyDefaults(params)
+    
+    ' Prepare information which should be used during REST API call URL preparation.
+    request = pn_historyRequest(params)
+    request.operation = PNOperationType().PNHistoryOperation
+    
+    callbackData = {callback: callback, context: context, params: params, client: m, func: "history"}
+    m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
+end sub
 
-    query = {count: pnMinValue(100, config.count)}
-    if config.start <> invalid then query.start = config.start
-    if config.end <> invalid then query.end = config.end
-    if config.includeTimetoken <> invalid then
-       query.include_token = config.includeTimetoken
-    end if
-    if config.reverse <> invalid then query.reverse = config.reverse
-    requestSetup.append({"query": query})
 
-    HistoryCallback = Function (status as Object, response as Object, callback as Function)
-        status.operation = "PNHistoryOperation"
+REM ******************************************************
+REM
+REM Private functions
+REM
+REM ******************************************************
 
-        if status.error then
-            callback(status, invalid)
-        else
-            callback(status, response)
+' brief:  Prepare information which should be used during REST API call URL preparation.
+'
+' params  Object with values which should be used with API call.
+'
+function pn_historyRequest(params as Object) as Object
+    request = {path:{}, query: {count: params.count, reverse: params.reverse, "include_token": params.includeTimetoken}}
+    if type(params["start"]) <> invalid then request.query["start"] = params["start"]
+    if type(params["end"]) <> invalid then request.query["end"] = params["end"]
+    if PNString(params.channel).isEmpty() = false then request.path["{channel}"] = PNString(params.channel).escape()
+    
+    return request
+end function
+
+' brief:  Default values initialization.
+'
+' params  Object with values which should be used with API call.
+'
+sub pn_historyDefaults(params as Object)
+    if type(params.reverse) <> "Boolean" then params.reverse = false
+    if type(params.includeTimetoken) <> "Boolean" then params.includeTimetoken = false
+    if type(params["start"]) <> invalid AND type(params["end"]) <> invalid then
+        if params["start"] > "0" AND params["end"] > "0" AND params["start"] > params["end"] then
+            start = ""+params["start"]
+            params["start"] = params["end"]
+            params["end"] = start
         end if
-    end Function
-
-    HTTPRequest(requestSetup, HistoryCallback)
-end Function
+    end if
+    if params.count <> invalid then params.count = PNNumber().min(100, params.count) else params.count = 100
+end sub

@@ -1,29 +1,34 @@
+' brief:      List channel group's channels managed by 'stream controller'.
+' discussion: Retrieve list of all channels which has been registered with channel group by it's 
+'             name.
+'
+' params   Object with values which should be used with API call.
+' callback Reference on function which will be responsible for received status and result objects 
+'          handling.
+'
+sub PNChannelGroupListChannels(params as Object, callback as Function, context = invalid as Dynamic)
+    ' Prepare information which should be used during REST API call URL preparation.
+    request = pn_channelGroupListChannelsRequest(params)
+    request.operation = PNOperationType().PNChannelsForGroupOperation
 
-Function ChannelGroupListChannels(config as Object, callback as Function)
-    urlt = CreateObject("roUrlTransfer")
-    requestSetup = createRequestConfig(m)
-    requestSetup.callback = callback
+    callbackData = {callback: callback, context: context, params: params, client: m, func: "streamController.listChannels"}
+    m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
+end sub
 
-    requestSetup.path = [
-        "v1",
-        "channel-registration",
-        "sub-key",
-        m.subscribeKey,
-        "channel-group",
-        config.channelGroup,
-    ]
 
-    ChannelGroupListChannelsCallback = Function (status as Object, response as Object, callback as Function)
-        status.operation = "PNChannelsForGroupOperation"
+REM ******************************************************
+REM
+REM Private functions
+REM
+REM ******************************************************
 
-        if status.error then
-            callback(status, invalid)
-        else
-            callback(status, { channels: response.payload.channels })
-        end if
-
-    end Function
-
-    HTTPRequest(requestSetup, ChannelGroupListChannelsCallback)
-
-end Function
+' brief:  Prepare information which should be used during REST API call URL preparation.
+'
+' params  Object with values which should be used with API call.
+'
+function pn_channelGroupListChannelsRequest(params as Object) as Object
+    request = {path:{}, query: {}}
+    if PNString(params.group).isEmpty() = false then request.path["{channel-group}"] = PNString(params.group).escape()
+    
+    return request
+end function
