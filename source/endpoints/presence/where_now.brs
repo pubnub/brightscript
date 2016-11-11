@@ -9,7 +9,7 @@ sub PNPresenceWhereNow(params as Object, callback as Function, context = invalid
     request = pn_presenceWhereNowRequest(params)
     request.operation = PNOperationType().PNWhereNowOperation
     
-    callbackData = {callback: callback, context: context, params: params, client: m, func: "presence.whereNow"}
+    callbackData = {callback: callback, context: context, params: params, client: m, func: "whereNow"}
     m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
 end sub
 

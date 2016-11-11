@@ -23,7 +23,7 @@ sub PNPresenceHereNow(params as Object, callback as Function, context = invalid 
     request = pn_presenceHereNowRequest(params)
     request.operation = operation
     
-    callbackData = {callback: callback, context: context, params: params, client: m, func: "presence.hereNow"}
+    callbackData = {callback: callback, context: context, params: params, client: m, func: "hereNow"}
     m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
 end sub
 

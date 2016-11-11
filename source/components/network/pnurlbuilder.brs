@@ -65,7 +65,7 @@ function pn_urlBuilderURLForOperation(operation as String, config as Object) as 
                 urlTemplate$ = urlTemplate$.left(urlTemplate$.len() - 1)
             end if
             ' Append query parameters if provided.
-            if config.query <> invalid AND config.query.count() > 0 then
+            if config.query <> invalid AND config.query.ifAssociativeArray.count() > 0 then
                 urlTemplate$ = urlTemplate$ + "?" + PNObject(config.query).toQueryString()
             end if
             urlForOperation = urlTemplate$

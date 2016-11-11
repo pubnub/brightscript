@@ -15,7 +15,7 @@ sub PNPresenceSetState(params as Object, callback = invalid as Function, context
     request = pn_presenceSetStateRequest(params)
     request.operation = PNOperationType().PNSetStateOperation
     
-    callbackData = {callback: callback, context: context, params: params, client: m, func: "presence.setState"}
+    callbackData = {callback: callback, context: context, params: params, client: m, func: "setState"}
     m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, pn_presenseSetStateHandler)
 end sub
 

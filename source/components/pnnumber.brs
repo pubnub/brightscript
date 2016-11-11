@@ -7,6 +7,7 @@ function PNNumber(number = invalid as Dynamic) as Object
     this = {private: {value: number}}
     this.min = pn_numberMinValue
     this.max = pn_numberMaxValue
+    this.isBoolean = pn_numberBoolean
     this.isNumber = pn_numberValidObject
     
     return this
@@ -47,6 +48,17 @@ function pn_numberMaxValue(val1 = invalid as Dynamic, val2 = invalid as Dynamic,
     end if
     
     return maximumValue
+end function
+
+' brief:  Check whether specified object is boolean or not.
+'
+function pn_numberBoolean() as Boolean
+    isBoolean = false
+    if m.private.value <> invalid then
+        isBoolean = getInterface(m.private.value, "ifBoolean") <> invalid
+    end if
+    
+    return isBoolean
 end function
 
 ' brief:  Check whether specified object is number or not.

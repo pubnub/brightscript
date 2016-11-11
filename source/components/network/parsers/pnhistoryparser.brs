@@ -37,6 +37,7 @@ function pn_historyParse(response = invalid as Dynamic, additionalData = invalid
             if PNObject(messageObject).isDictionary() = true AND messageObject.message <> invalid AND messageObject.timetoken <> invalid then
                 timeToken = messageObject.timetoken
                 message = messageObject.message
+                messageObject = PNObject(message).copy(1)
             end if
             
             if PNString(additionalData.cipherKey).isEmpty() = false then

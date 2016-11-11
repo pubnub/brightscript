@@ -15,7 +15,7 @@ sub PNPresenceGetState(params as Object, callback as Function, context = invalid
     if request.path["{channel}"] = "," then operation = PNOperationType().PNStateForChannelGroupOperation
     request.operation = operation
     
-    callbackData = {callback: callback, context: context, params: params, client: m, func: "presence.getState"}
+    callbackData = {callback: callback, context: context, params: params, client: m, func: "getState"}
     m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, pn_presenseGetStateHandler)
 end sub
 

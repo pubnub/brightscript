@@ -113,9 +113,6 @@ function pn_publishRequest(params as Object, context as Object) as Object
     end if
     if params.ttl <> invalid then request.query.ttl = params.ttl
     if params.replicate = false then request.query.norep = "true"
-    if PNString(messageForPublish).isEmpty() = false AND params.sendByPost = false then
-        request.path["{message}"] = PNString(messageForPublish).escape()
-    end if
     if PNString(messageForPublish).isEmpty() = false then
         if params.sendByPost = false then 
             request.path["{message}"] = PNString(messageForPublish).escape()

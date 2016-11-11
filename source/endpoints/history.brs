@@ -33,9 +33,10 @@ REM ******************************************************
 ' params  Object with values which should be used with API call.
 '
 function pn_historyRequest(params as Object) as Object
-    request = {path:{}, query: {count: params.count, reverse: params.reverse, "include_token": params.includeTimetoken}}
-    if type(params["start"]) <> invalid then request.query["start"] = params["start"]
-    if type(params["end"]) <> invalid then request.query["end"] = params["end"]
+    request = {path:{}, query: {count: params.count, "include_token": true}}
+    if params.reverse <> invalid then request.query.reverse = params.reverse
+    if params["start"] <> invalid then request.query["start"] = params["start"]
+    if params["end"] <> invalid then request.query["end"] = params["end"]
     if PNString(params.channel).isEmpty() = false then request.path["{channel}"] = PNString(params.channel).escape()
     
     return request
@@ -46,9 +47,8 @@ end function
 ' params  Object with values which should be used with API call.
 '
 sub pn_historyDefaults(params as Object)
-    if type(params.reverse) <> "Boolean" then params.reverse = false
-    if type(params.includeTimetoken) <> "Boolean" then params.includeTimetoken = false
-    if type(params["start"]) <> invalid AND type(params["end"]) <> invalid then
+    if PNNumber(params.includeTimetoken).isBoolean() = false then params.includeTimetoken = false
+    if params["start"] <> invalid AND params["end"] <> invalid then
         if params["start"] > "0" AND params["end"] > "0" AND params["start"] > params["end"] then
             start = ""+params["start"]
             params["start"] = params["end"]

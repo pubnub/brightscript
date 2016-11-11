@@ -13,7 +13,7 @@ sub PNChannelGroupAddChannels(params as Object, callback = invalid as Dynamic, c
     request.operation = PNOperationType().PNAddChannelsToGroupOperation
     
     if PNArray(params.channels).isEmpty() = false then
-        callbackData = {callback: callback, context: context, params: params, client: m, func: "streamController.addChannels"}
+        callbackData = {callback: callback, context: context, params: params, client: m, func: "addChannels"}
         m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
     else
         ?"{INFO} There is no channels to add."

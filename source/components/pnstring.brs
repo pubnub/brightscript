@@ -8,6 +8,7 @@ function PNString(stringValue = invalid as Dynamic) as Object
     this.hasPrefix = pn_stringHasPrefix
     this.hasSuffix = pn_stringHasSuffix
     this.trim = pn_stringTrim
+    this.repeat = pn_stringRepeat
     this.isEmpty = pn_stringIsEmpty
     this.escape = pn_stringEscape
     this.unescape = pn_stringUnescape
@@ -70,6 +71,18 @@ function pn_stringTrim(trimmedChar = invalid as Dynamic) as Dynamic
     end if
     
     return timmedString
+end function
+
+function pn_stringRepeat(count = -1 as Integer) as Dynamic
+    if count = -1 then repeatedString = "" else repeatedString = m.private.value
+    if count > 0 then
+        repeatedString = ""
+        for idx=0 to count - 1 step 1
+            repeatedString = repeatedString + m.private.value
+        end for
+    end if
+    
+    return repeatedString
 end function
 
 ' brief:  Perform URL encoding on provided string object.

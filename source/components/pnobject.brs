@@ -12,6 +12,7 @@ function PNObject(obj = invalid as Dynamic) as Object
     this.copy = pn_objectShallowCopy
     this.toQueryString = pn_objectToQueryString
     this.isDictionary = pn_objectIsDictionary
+    this.toString = pn_objectToString
     
     return this
 end function
@@ -106,4 +107,51 @@ end function
 '
 function pn_objectIsDictionary() as Boolean
     return m.private.value <> invalid AND type(m.private.value) = "roAssociativeArray"
+end function
+
+' brief:  Print object's content as prettified JSON string.
+'
+' indentation  Current indentation level which should be used to print content.
+'
+function pn_objectToString(indentation = 0 as Integer, obj = invalid as Dynamic, tabSize = 4 as Integer) as Dynamic
+    output = invalid
+    if obj = invalid then targetValue = m.private.value else targetValue = obj
+    
+    if targetValue <> invalid AND PNArray(targetValue).isArray() = true then
+        output = "[" + chr(10)
+        if indentation = -1 then indentation = 0
+        indentation = indentation + tabSize
+        for itemIdx=0 to targetValue.count() - 1 step 1
+            value = targetValue.getEntry(itemIdx)
+            output = output + PNString(" ").repeat(indentation) 
+            if value <> invalid then
+                output = output + m.toString(indentation, targetValue.getEntry(itemIdx)) + chr(10)
+            else
+                output = output + "invalid" + chr(10)
+            end if
+        end for
+        indentation = indentation - tabSize
+        if indentation = 0 then indentation = -1
+        output = output + PNString(" ").repeat(indentation) + "]"
+    else if targetValue <> invalid AND PNObject(targetValue).isDictionary() = true then
+        output = "{" + chr(10)
+        if indentation = -1 then indentation = 0
+        indentation = indentation + tabSize
+        for each key in targetValue
+            value = targetValue[key]
+            output = output + PNString(" ").repeat(indentation) + key + ": "
+            if value <> invalid then
+                output = output + m.toString(indentation, value) + chr(10)
+            else
+                output = output + "invalid" + chr(10)
+            end if
+        end for
+        indentation = indentation - tabSize
+        if indentation = 0 then indentation = -1
+        output = output + PNString(" ").repeat(indentation) + "}"
+    else
+        output = box(targetValue).toStr()
+    end if
+    
+    return output
 end function

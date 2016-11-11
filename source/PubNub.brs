@@ -3,11 +3,12 @@ function PubNub(config as Object, port as Object) as Object
         private: {
             config: {
                 version: "0.0.1"
-                origin: PNObject(config.origin).default("pubsub.pubnub.com")
                 publishKey: PNObject(config.publishKey).default("")
                 subscribeKey: PNObject(config.subscribeKey).default("")
                 authKey: config.authKey
                 uuid: PNObject(config.uuid).default(createObject("roDeviceInfo").getRandomUUID())
+                origin: PNObject(config.origin).default("pubsub.pubnub.com")
+                secure: PNObject(config.secure).default(true)
                 cipherKey: config.cipherKey
                 deviceID: createObject("roDeviceInfo").getDeviceUniqueId()
                 instanceID: createObject("roDeviceInfo").getRandomUUID()
@@ -17,7 +18,6 @@ function PubNub(config as Object, port as Object) as Object
                 presenceHeartbeatInterval: config.presenceHeartbeatInterval
                 notifyHeartbeatFailure: PNObject(config.notifyHeartbeatFailure).default(true)
                 notifyHeartbeatSuccess: PNObject(config.notifyHeartbeatSuccess).default(false)
-                secure: PNObject(config.secure).default(true)
                 keepTimeTokenOnListChange: PNObject(config.keepTimeTokenOnListChange).default(true)
                 restoreSubscription: PNObject(config.restoreSubscription).default(true)
                 catchUpOnSubscriptionRestore: PNObject(config.catchUpOnSubscriptionRestore).default(true)
@@ -53,38 +53,30 @@ function PubNub(config as Object, port as Object) as Object
 '
 '******************************************************
 
-    ' channel groups
-    this.streamController = {
-        private: {
-            networkManager: this.private.networkManager
-            config: PNObject(this.private.config).copy(1)
-        }
-        listChannels: PNChannelGroupListChannels
-        addChannels: PNChannelGroupAddChannels
-        removeChannels: PNChannelGroupRemoveChannels
-        deleteGroup: PNChannelGroupDeleteGroup
-    }
+    ' Stream controller - start
+    this.listChannels = PNChannelGroupListChannels
+    this.addChannels = PNChannelGroupAddChannels
+    this.removeChannels = PNChannelGroupRemoveChannels
+    this.deleteGroup = PNChannelGroupDeleteGroup
+    ' Stream controller - end
     
+    ' Message history
     this.history = PNHistory
+    
+    ' Message publish
     this.publish = PNPublish
     
-    ' presence
-    this.presence = {
-        private: {
-            networkManager: this.private.networkManager
-            stateManager: this.private.stateManager
-            config: PNObject(this.private.config).copy(1)
-        }
-        hereNow: PNPresenceHereNow
-        whereNow: PNPresenceWhereNow
-        setState: PNPresenceSetState
-        getState: PNPresenceGetState
-    }
-    ' end presence
+    ' Presence - start
+    this.hereNow = PNPresenceHereNow
+    this.whereNow = PNPresenceWhereNow
+    this.setState = PNPresenceSetState
+    this.getState = PNPresenceGetState
+    ' Presence - end
     
+    ' Time
     this.time = PNTime
 
-    ' Subscribe
+    ' Subscribe / unsubscribe - start
     subscribeEndpoint = PNSubscribe(this)
     this.subscribe = subscribeEndpoint.subscribe
     this.cancelSubscriptionRetry = subscribeEndpoint.cancelSubscriptionRetry
@@ -94,15 +86,18 @@ function PubNub(config as Object, port as Object) as Object
     this.presenceEnabledForChannel = subscribeEndpoint.presenceEnabledForChannel
     this.channelGroups = subscribeEndpoint.channelGroups
     this.presenceEnabledForChannelGroup = subscribeEndpoint.presenceEnabledForChannelGroup
-    ' end subscribe
+    ' Subscribe / unsubscribe - start
 
-
-    ' end mounting endpoints
+    ' Event listener - start
     this.addListener = this.private.listenerManager.addListener
     this.removeListener = this.private.listenerManager.removeListener
     this.removeAllListeners = this.private.listenerManager.removeAllListeners
+    ' Event listener - end
     
+    ' Run-loop message handler
     this.handleMessage = pn_pubnubHandleMessage
+    
+    ' Destructor
     this.destroy = pn_pubnubDestroy
 
     return this

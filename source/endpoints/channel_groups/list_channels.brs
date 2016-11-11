@@ -11,7 +11,7 @@ sub PNChannelGroupListChannels(params as Object, callback as Function, context =
     request = pn_channelGroupListChannelsRequest(params)
     request.operation = PNOperationType().PNChannelsForGroupOperation
 
-    callbackData = {callback: callback, context: context, params: params, client: m, func: "streamController.listChannels"}
+    callbackData = {callback: callback, context: context, params: params, client: m, func: "listChannels"}
     m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
 end sub
 

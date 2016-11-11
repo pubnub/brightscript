@@ -177,7 +177,7 @@ end function
 ' requestURL  reference on REST API URL which should be used during request.
 ' postData    reference on data which should be sent as POST body along with API call.
 '
-function pn_networkingRequestWithURL(requestURL as String, postData = invalid as Dynamic) as Object
+function pn_networkingRequestWithURL(requestURL= invalid as Dynamic, postData = invalid as Dynamic) as Object
     request = PNRequest(requestURL, postData)
     request.setHeaders(m.getDefaultHeaders())
     

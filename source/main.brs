@@ -16,25 +16,246 @@ sub main()
     print "canvas shown"
     
     ' Create and configure PubNub client instance.
-    client = PubNub({ subscribeKey: "demo-36", publishKey: "demo-36", secure: false, presenceHeartbeatValue: 30}, messagePort)
-    
-    ' Publish message.
-'    publishCallback = Function(status as Object)
-'       print "{publish} operation", status.operation
-'       print "{publish} category", status.category
-'       print "{publish} error", status.error
-'       print "{publish} data", status.data
-'       print "{publish} error data", status.errordata
-'       print "{publish} status", status
-'    end Function
-'    client.publish({ channel: "hello-channel", message: { such: "wow"}, sendByPost: true }, publishCallback)
+    client = PubNub({ subscribeKey: "demo-36", publishKey: "demo-36"}, messagePort)
 
-    ' PubNub events listener configuration.
-    client.addListener(PNObjectEventListener())
-    client.subscribe({channels: ["hello-channel"], withPresence: true, "state":{"hello-channel":{"some":"data"}}})
+'******************************************************
+'
+' PubNub events listener configuration.
+'
+'******************************************************
+'    client.addListener(PNObjectEventListener())
 
+
+'******************************************************
+'
+' Subscription example.
+'
+'******************************************************
+'    client.subscribe({channels: ["roku-channel"], withPresence: false, "state":{"roku-channel":{"welcome":"online"}}})
+
+
+'******************************************************
+'
+' Unsubscription example.
+'
+'******************************************************
+'    client.unsubscribe({
+'        channels: ["pubnub-channel", "roku-channel"]
+'        channelGroups: ["brightscript-group"]
+'    })
+
+
+'******************************************************
+'
+' Publish message.
+'
+'******************************************************
+'    publishCallback = function(status as Object)
+'        if status.error = false then
+'            ' Handle successful message publish.
+'        else
+'            ' Handle message publish error.
+'            ?"Message publish did fail with error details:",status.errorData
+'        end if
+'    end function
+'    pubnub.publish({
+'        channel: "roku-channel"
+'        message: {hello: "world"}
+'    }, publishCallback)
+
+
+'******************************************************
+'
+' History fetch.
+'
+'******************************************************
+'    historyCallback = function(result = invalid as Dynamic, status = invalid as Dynamic)
+'        if result <> invalid then
+'            ' Handle successful history fetch.
+'            ?"Messages between "+box(result.data.start).toStr()+" .. "+box(result.data["end"]).toStr()+": "+PNObject(result.data.messages).toString()
+'        else
+'            ' Handle messages history request error.
+'            ?"Messages history fetch did fail with error details:",status.errorData
+'        end if
+'    end function
+'    client.history({channel: "hello-channel"}, historyCallback)
+
+
+'******************************************************
+'
+' Stream Controller / Channel groups
+' Add channels to group.
+'
+'******************************************************
+'    channelsAddCallback = function(status as Object)
+'        if status.error = false then
+'            ' Handle successful channels addition from group.
+'        else
+'            ' Handle channels addition error.
+'            ?"Channels addition error details:",status.errorData
+'        end if
+'    end function
+'    
+'    client.addChannels({
+'        channels: ["brightscript", "roku"]
+'        group: "roku-developers-community"
+'    }, channelsAddCallback)
+
+
+'******************************************************
+'
+' Stream Controller / Channel groups
+' Remove channels from group.
+'
+'******************************************************
+'    channelsRemoveCallback = function(status as Object)
+'        if status.error = false then
+'            ' Handle successful channels removal from group.
+'        else
+'            ' Handle channels removal error.
+'            ?"Channels remove error details:",status.errorData
+'        end if
+'    end function
+'    
+'    client.removeChannels({
+'        channels: ["brightscript"]
+'        group: "roku-developers-community"
+'    }, channelsRemoveCallback)
     
-   
+'******************************************************
+'
+' Stream Controller / Channel groups
+' Remove channel group.
+'
+'****************************************************** 
+'    groupRemoveCallback = function(status as Object)
+'        if status.error = false then
+'            ' Handle successful channel group removal.
+'        else
+'            ' Handle channel group removal error.
+'            ?"Channel group remove error details:",status.errorData
+'        end if
+'    end function
+'    
+'    client.deleteGroup({group: "roku-developers-community"}, groupRemoveCallback)
+
+
+'******************************************************
+'
+' Stream Controller / Channel groups
+' List channels for group.
+'
+'******************************************************
+'    channelsAuditCallback = function(result = invalid as Dynamic, status = invalid as Dynamic)
+'        if result <> invalid then
+'            ' Handle successful group's channels fetch.
+'            ?"Channels:",result.data.channels
+'        else
+'            ' Handle group's channels request error.
+'            ?"Group's channels fetch did fail with error details:",status.errorData
+'        end if
+'    end function
+'    
+'    client.listChannels({group: "roku-developers-community"}, channelsAuditCallback)
+
+
+'******************************************************
+'
+' Presence
+' Here now.
+'
+'******************************************************
+'    hereNowCallback = function(result = invalid as Dynamic, status = invalid as Dynamic)
+'        if result <> invalid then
+'            ' Handle users' presence information fetch.
+'            ?"Occupancy:",result.data.occupancy
+'            ?"Participants: "+PNObject(result.data.uuids).toString()
+'        else
+'            ' Handle users' presence information request error.
+'            ?"Users' presence information fetch did fail with error details:",status.errorData
+'        end if
+'    end function
+'    
+'    client.hereNow({channel: "roku-channel"}, hereNowCallback)
+
+'******************************************************
+'
+' Presence
+' Where now.
+'
+'******************************************************
+'    whereNowCallback = function(result = invalid as Dynamic, status = invalid as Dynamic)
+'        if result <> invalid then
+'            ' Handle user channels presence fetch.
+'            ?"Channels:",result.data.channels
+'        else
+'            ' Handle user channels presence request error.
+'            ?"User channels fetch did fail with error details:",status.errorData
+'        end if
+'    end function
+'
+'    client.whereNow({uuid: client.configuration().uuid}, whereNowCallback)
+
+
+'******************************************************
+'
+' Presence
+' Set client state.
+'
+'******************************************************
+'    setStateCallback = function(status as Object)
+'        if status.error = false then
+'            ' Handle successful client's state change.
+'        else
+'            ' Handle client's state change error.
+'            ?"Did fail to change client's state with error details:",status.errorData
+'        end if
+'    end function
+'
+'    client.setState({
+'        channel: "roku-channel"
+'        uuid: client.configuration().uuid
+'        "state":{welcome:{"to":"Roku channel"}}
+'    }, setStateCallback)
+    
+    
+'******************************************************
+'
+' Presence
+' Get client state.
+'
+'******************************************************
+'    getStateCallback = function(result = invalid as Dynamic, status = invalid as Dynamic)
+'        if result <> invalid then
+'            ' Handle client's state for user fetch.
+'            ?"User state:",result.data.state
+'        else
+'            ' Handle client's state for user request error.
+'            ?"User state fetch did fail with error details:",status.errorData
+'        end if
+'    end function
+'    
+'    client.getState({
+'        channel: "roku-channel"
+'        uuid: client.configuration().uuid
+'    }, getStateCallback)
+    
+    
+'******************************************************
+'
+' Time.
+'
+'******************************************************
+'    timeCallback = function(result = invalid as Dynamic, status = invalid as Dynamic)
+'        if result <> invalid then
+'            ' Handle time fetch.
+'            ?"Timetoken",result.data.timetoken
+'        else
+'            ' Handle time request error.
+'            ?"Time fetch did fail with error details:",status.errorData
+'        end if
+'    end function
+'    client.time(timeCallback)
     
     ' Create and configure main 'run-loop'. This 'run-loop' will be used by application to handle 
     ' events and notify PubNub client about any of them.
@@ -59,8 +280,9 @@ end sub
 
 function PNObjectEventListener() as Object
     return {
-        status: function(client as Object, status as Dynamic)
-            if status.error = false then
+        status: function(client as Object, status as Object)
+            ?"STATUS:",status
+            if status <> invalid AND status.error = false then
                 if status.category = PNStatusCategory().PNAcknowledgmentCategory then ?"^^^^ Non-error status: ACK"
                 if status.operation = PNOperationType().PNSubscribeOperation then
                     if status.category = PNStatusCategory().PNConnectedCategory then 
@@ -77,7 +299,7 @@ function PNObjectEventListener() as Object
                 else if status.operation = PNOperationType().PNHeartbeatOperation then 
                     ?"Heartbeat operation successful."
                 end if
-            else
+            else if status <> invalid then
                 if status.category = PNStatusCategory().PNAccessDeniedCategory then
                     ?"^^^^ handleErrorStatus: PAM Error: for resource Will Auto Retry?:", status.automaticallyRetry
                 else if status.category = PNStatusCategory().PNDecryptionErrorCategory then
@@ -113,7 +335,7 @@ function PNObjectEventListener() as Object
             ?"{INFO} Received '"+presence.data.presenceEvent+"' presence event with details:", presence.data.presence
         end function
         message: function(client as Object, message as Object)
-            ?"{INFO} Received message on '"+message.data.channel+"': ",message.data.message
+            ?"{INFO} Received message from '"+message.data.publisher+"' on '"+message.data.channel+"': ",message.data.message
         end function
     }
 end function

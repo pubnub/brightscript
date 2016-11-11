@@ -123,19 +123,12 @@ sub pn_subscriptionManagerSubscribe(params as Object, initialSubscribe = true as
 end sub
 
 sub pn_subscriptionManagerUnsubscribeFromAll()
-    unsubscriptionCallback = function(data as Object)
-        channelGroups = data.context.private.channelGroupObjects()
-        data.context.unsubscribe({channelGroups: channelGroups, informingListener: true, subscribeOnRest: false})
-    end function
-    
-    if m.private.channelObjects().count() > 0 then
-        hasChannelGroups = m.private.channelGroupObjects().count() > 0
-        if hasChannelGroups = false then channelsUnsubscriptionCallback = invalid
-        objects = PNObject(m.private.channelObjects()).copy()
-        m.removeChannels(objects, true)
-        m.unsubscribe({channels: objects, informingListener: hasChannelGroups = false, subscribeOnRest: false}, unsubscriptionCallback)
-    else if m.private.channelGroupObjects().count() > 0 then
-        unsubscriptionCallback({context: m})
+    if m.private.channelObjects().count() > 0 OR m.private.channelGroupObjects().count() > 0 then
+        channels = PNObject(m.private.channelObjects()).copy()
+        groups = PNObject(m.private.channelGroupObjects()).copy()
+        m.removeChannels(channels, true)
+        m.removeChannelGroups(groups, true)
+        m.unsubscribe({channels: objects, channelGroups: groups, informingListener: true, subscribeOnRest: false})
     end if
 end sub
 

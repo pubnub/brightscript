@@ -12,7 +12,7 @@ sub PNChannelGroupDeleteGroup(params as Object, callback = invalid as Dynamic, c
     request = pn_channelGroupDeleteGroupRequest(params)
     request.operation = PNOperationType().PNRemoveGroupOperation
 
-    callbackData = {callback: callback, context: context, params: params, client: m, func: "streamController.deleteGroup"}
+    callbackData = {callback: callback, context: context, params: params, client: m, func: "deleteGroup"}
     m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
 end sub
 

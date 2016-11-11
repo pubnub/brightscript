@@ -7,6 +7,7 @@
 function PNMessageResult(subscribeStatus as Object, messageData = invalid as Dynamic) as Object
     this = subscribeStatus.private.copyWithMutatedData(subscribeStatus, messageData)
     this.data = messageData
+    this.data.publisher = PNObject(messageData).valueAtKeyPath("envelope.senderidenrifier")
     this.data.delete("region")
     this.delete("private")
     

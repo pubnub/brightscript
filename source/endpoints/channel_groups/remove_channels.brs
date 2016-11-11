@@ -13,7 +13,7 @@ sub PNChannelGroupRemoveChannels(params as Object, callback = invalid as Dynamic
     request.operation = PNOperationType().PNRemoveChannelsFromGroupOperation
     
     if PNArray(params.channels).isEmpty() = false then
-        callbackData = {callback: callback, context: context, params: params, client: m, func: "streamController.removeChannels"}
+        callbackData = {callback: callback, context: context, params: params, client: m, func: "removeChannels"}
         m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
     else
         ?"{WARN} Empty list of channels provided - this may lead for whole group deletion. Please use appropriate API call to explicitly delete group."
