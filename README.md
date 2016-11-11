@@ -81,7 +81,7 @@ end while
 **NOTE:** Don't use zero timeout for _wait_ because **PubNub** client won't be able to maintain internal timers and trigger requests timeout events.  
 **NOTE:** If it will be required to create another **PubNub** client and invalidate previous one you need to call:  
 ```brightscript
-    client.destroy()
+client.destroy()
 ```  
 
 ## Subscription
