@@ -1,76 +1,64 @@
-
-Function Subscribe(config as Object, callback as Function)
-    urlt = CreateObject("roUrlTransfer")
-    requestSetup = createRequestConfig(m)
-    requestSetup.callback = callback
-
-    stringifiedChannelList = ","
-
-    if config.channels <> invalid then
-      stringifiedChannelList = implode(",", config.channels)
-    end if
-
-    if config.timetoken <> invalid then
-        requestSetup.query.tt = config.timetoken.ToStr()
-    end if
-
-    if config.region <> invalid then
-        requestSetup.query.tr = config.region
-    end if
-
-    if config.filterExpression <> invalid then
-        requestSetup.query["filter-expr"] = config.filterExpression
-    end if
-
-    if config.channelGroups <> invalid then
-        requestSetup.query["channel-group"] = implode(",", config.channelGroups)
-    end if
-
-    requestSetup.path = [
-        "v2",
-        "subscribe",
-        m.subscribeKey,
-        urlt.Escape(stringifiedChannelList),
-        "0"
-    ]
-
-    SubscribeCallback = Function (status as Object, response as Object, callback as Function)
-        status.operation = "PNSubscribeOperation"
-
-        if status.error then
-            callback(status, invalid)
-        else
-            messages = []
-            metadata = {
-                timetoken: response.t.t,
-                region: response.t.r
-            }
-
-            For Each rawMessage In response.m
-              publishMetaData = {
-                publishTimetoken: rawMessage.p.t,
-                region: rawMessage.p.r
-              }
-
-              parsedMessage = {
-                shard: rawMessage.a,
-                subscriptionMatch: rawMessage.b,
-                channel: rawMessage.c,
-                payload: rawMessage.d,
-                flags: rawMessage.f,
-                issuingClientId: rawMessage.i,
-                subscribeKey: rawMessage.k,
-                originationTimetoken: rawMessage.o,
-                publishMetaData: publishMetaData
-              }
-
-              messages.push(parsedMessage)
-            End For
-
-            callback(status, { messages: messages, metadata: metadata })
+function PNSubscribe(client as Object) as Object
+    instance = {}
+    
+    instance.subscribe = function(params as Object)
+        params.withPresence = PNObject(params.withPresence).default(false)
+        if params.channels <> invalid OR params.channelGroups <> invalid then
+            if params.channels <> invalid AND params.channels.count() > 0 then 
+                m.private.subscriptionManager.private.addChannels(params.channels, params.withPresence)
+            end if
+            if params.channelGroups <> invalid AND params.channelGroups.count() > 0 then 
+                m.private.subscriptionManager.private.addChannelGroups(params.channelGroups, params.withPresence)
+            end if
+            m.private.subscriptionManager.subscribe(params)
         end if
-    end Function
+    end function
+    
+    instance.cancelSubscriptionRetry = function()
+        m.private.subscriptionManager.cancelSubscriptionRetry()
+    end function
 
-    HTTPRequest(requestSetup, SubscribeCallback)
+    instance.unsubscribe = function(params as Object)
+        params.withPresence = PNObject(params.withPresence).default(false)
+        if params.channels <> invalid OR params.channelGroups <> invalid then
+            if params.channels <> invalid AND params.channels.count() > 0 then 
+                m.private.subscriptionManager.private.removeChannels(params.channels, params.withPresence)
+            end if
+            if params.channelGroups <> invalid AND params.channelGroups.count() > 0 then 
+                m.private.subscriptionManager.private.removeChannelGroups(params.channelGroups, params.withPresence)
+            end if
+            m.private.subscriptionManager.unsubscribe(params)
+        end if
+    end function
 
-end Function
+    instance.unsubscribeAll = function()
+        m.private.subscriptionManager.unsubscribeAll()
+    end function
+
+    instance.channels = function() as Object
+        return m.private.subscriptionManager.channels()
+    end function
+
+    instance.presenceEnabledForChannel = function(channel as String) as Boolean
+        enabled = false
+        if channel <> invalid then
+          enabled = m.private.subscriptionManager.presenceEnabledForChannel(channel)
+        end if
+        return enabled
+    end function
+
+    instance.channelGroups = function() as Object
+        return m.private.subscriptionManager.channelGroups()
+    end function
+
+    instance.presenceEnabledForChannelGroup = function(channelGroup as String) as Boolean
+        enabled = false
+        if channelGroup <> invalid then
+          enabled = m.private.subscriptionManager.presenceEnabledForChannelGroup(channelGroup)
+        end if
+        
+        return enabled
+    end function
+    
+    return instance
+end function

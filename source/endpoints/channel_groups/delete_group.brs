@@ -1,24 +1,35 @@
+' brief:      Existing channel group removal from 'stream controller'.
+' discussion: 'Remove' existing channel group by it's name.
+'
+' params   Object with values which should be used with API call.
+' callback Reference on function which will be responsible for received status object handling.
+'
+sub PNChannelGroupDeleteGroup(params as Object, callback = invalid as Dynamic, context = invalid as Dynamic)
+    ' Default values initialization
+    if type(callback) = "<uninitialized>" then callback = invalid
+    
+    ' Prepare information which should be used during REST API call URL preparation.
+    request = pn_channelGroupDeleteGroupRequest(params)
+    request.operation = PNOperationType().PNRemoveGroupOperation
 
-Function ChannelGroupDeleteGroup(config as Object, callback as Function)
-    urlt = CreateObject("roUrlTransfer")
-    requestSetup = createRequestConfig(m)
-    requestSetup.callback = callback
+    callbackData = {callback: callback, context: context, params: params, client: m, func: "deleteGroup"}
+    m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
+end sub
 
-    requestSetup.path = [
-        "v1",
-        "channel-registration",
-        "sub-key",
-        m.subscribeKey,
-        "channel-group",
-        config.channelGroup,
-        "remove"
-    ]
 
-    ChannelGroupDeleteGroupCallback = Function (status as Object, response as Object, callback as Function)
-        status.operation = "PNRemoveGroupOperation"
-        callback(status, invalid)
-    end Function
+REM ******************************************************
+REM
+REM Private functions
+REM
+REM ******************************************************
 
-    HTTPRequest(requestSetup, ChannelGroupDeleteGroupCallback)
-
-end Function
+' brief:  Prepare information which should be used during REST API call URL preparation.
+'
+' params  Object with values which should be used with API call.
+'
+function pn_channelGroupDeleteGroupRequest(params as Object) as Object
+    request = {path:{}, query: {}}
+    if PNString(params.group).isEmpty() = false then request.path["{channel-group}"] = PNString(params.group).escape()
+    
+    return request
+end function

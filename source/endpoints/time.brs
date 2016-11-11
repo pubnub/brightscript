@@ -1,25 +1,13 @@
-
-
-Function Time(config as Object, callback as Function)
-    urlt = CreateObject("roUrlTransfer")
-    requestSetup = createRequestConfig(m)
-    requestSetup.callback = callback
-
-    requestSetup.path = [
-        "time",
-        "0"
-    ]
-
-    PublishCallback = Function (status as Object, response as Object, callback as Function)
-        status.operation = "PNTimeOperation"
-
-        if status.error then
-            callback(status, invalid)
-        else
-            callback(status, { timetoken: response[0] })
-        end if
-    end Function
-
-    HTTPRequest(requestSetup, PublishCallback)
-
-end Function
+' brief:  Retrieve PubNub's current time information.
+'
+' params   Object with values which should be used with API call.
+' callback Reference on function which will be responsible for received status and result objects 
+'          handling.
+'
+sub PNTime(callback as Function, context = invalid as Dynamic)
+    ' Prepare information which should be used during REST API call URL preparation.
+    request = {path:{}, query: {}, operation: PNOperationType().PNTimeOperation}
+    
+    callbackData = {callback: callback, context: context, params: {}, client: m, func: "time"}
+    m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, invalid)
+end sub
