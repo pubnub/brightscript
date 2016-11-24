@@ -257,17 +257,19 @@ function pn_networkingHandleMessage(message = invalid as Dynamic) as Boolean
     
     ' Handle request response event.
     if type(message) = "roUrlEvent" then
-        handled = true
         requestIdentifier = box(message.getSourceIdentity()).toStr()
         request = m.private.requests[requestIdentifier]
-        request.handleResponse(message)
+        if request <> invalid then
+            handled = true
+            request.handleResponse(message)
         
-        ' Process received request response.
-        m.private.handleOperationCompletion(request)
+            ' Process received request response.
+            m.private.handleOperationCompletion(request)
         
-        ' Remove request object from further processing.
-        m.private.requests.delete(requestIdentifier)
-        request.destroy()
+            ' Remove request object from further processing.
+            m.private.requests.delete(requestIdentifier)
+            request.destroy()
+        end if
     end if 
     
     ' Check timed out / failed requests and report about failure.
