@@ -11,7 +11,8 @@ function PNArray(array = invalid as Dynamic) as Object
     this.deleteObjects = pn_arrayRemoveValues
     this.componentsJoinedByString = pn_arrayComponentsJoinedByString
     this.isEmpty = pn_arrayIsEmpty
-    this.isEqual = pn_arrayIsEqual
+    this.isEqualContent = pn_arrayIsEqualContent
+    this.isEqualToArray = pn_arrayIsEqualToArray
     this.isArray = pn_arrayValidObject
     
     return this
@@ -51,7 +52,8 @@ function pn_arrayIndexOfValue(value = invalid as Dynamic, check = true as Boolea
     if value <> invalid then
         if check = true AND m.isArray() = true OR check = false then
             for itemIdx=0 to m.private.value.count() - 1 step 1
-                if m.private.value.getEntry(itemIdx) = value then index = itemIdx
+                valueAtIndex = m.private.value[itemIdx]
+                if PNObject(valueAtIndex).isEqual(value) = true then index = itemIdx
                 if index <> invalid then exit for
             end for
         end if
@@ -101,7 +103,7 @@ function pn_arrayComponentsJoinedByString(separator as String) as Dynamic
     if m.isArray() = true then
         joinedComponents = ""
         for itemIdx=0 to m.private.value.count() - 1 step 1
-            value = m.private.value.getEntry(itemIdx)
+            value = m.private.value[itemIdx]
             if value <> invalid then
                 if joinedComponents.len() > 0 then joinedComponents = joinedComponents+separator
                 joinedComponents = joinedComponents+value
@@ -123,17 +125,44 @@ function pn_arrayIsEmpty(check = true as Boolean) as Boolean
     return isArray = true AND m.private.value.count() = 0 OR isArray = false 
 end function
 
-' brief:  Check whether stored and passed objects are arrays and their content is equal.
+' brief:  Check whether stored and passed objects are arrays and they contain same data.
 '
 ' array  Reference on second object against which check should be done.
 '
-function pn_arrayIsEqual(array = invalid as Dynamic) as Boolean
-    isEqual = false
+function pn_arrayIsEqualContent(array = invalid as Dynamic) as Boolean
+    isEqualContent = false
     if m.isArray() = true and PNArray(array).isArray() = true then
+        isEqualContent = m.private.value.count() = array.count()
+        if isEqualContent = true then
+            for itemIdx=0 to m.private.value.count() - 1 step 1
+                isEqualContent = PNArray(array).contains(m.private.value[itemIdx])
+                if isEqualContent = false then exit for
+            end for
+        end if
+    end if
+    
+    return isEqualContent
+end function
+
+' brief:  Check whether stored and passed objects are arrays and their content (including indices)
+'         is equal.
+'
+' array  Reference on second object against which check should be done.
+' check  Whether passed object types should be verified or not.
+'
+function pn_arrayIsEqualToArray(array = invalid as Dynamic, check = true as Boolean) as Boolean
+    isEqual = false
+    if check = true AND m.isArray() = true and PNArray(array).isArray() = true OR check = false then
         isEqual = m.private.value.count() = array.count()
         if isEqual = true then
             for itemIdx=0 to m.private.value.count() - 1 step 1
-                isEqual = PNArray(array).contains(m.private.value[itemIdx])
+                value1 = m.private.value[itemIdx]
+                value2 = array[itemIdx]
+                if value1 <> invalid AND value2 <> invalid then
+                    isEqual = PNObject(value1).isEqual(value2)
+                else 
+                    isEqual = (value1 = invalid AND value2 = invalid)
+                end if
                 if isEqual = false then exit for
             end for
         end if

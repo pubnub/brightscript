@@ -6,6 +6,8 @@ Function PNSubscribeManager(config as Object, networkManager as Object, listener
             presenceChannels: []
             channelGroups: []
             presenceChannelGroups: []
+            cachedObjects: {}
+            cachedObjectIdentifiers: []
             filterExpression: invalid
             escapedFilterExpression: invalid
             shouldHandleRunLoopMessages: true
@@ -45,6 +47,11 @@ Function PNSubscribeManager(config as Object, networkManager as Object, listener
     this.private.handleRetryTimer = pn_subscriptionManagerHandleRetryTimer
 
     this.private.allObjects = pn_subscriptionManagerAllObjects
+    
+    this.private.deDuplicateMessages = pn_subscriptionManagerDeDuplicateMessages
+    this.private.clearCacheFromMessagesNewerThan = pn_subscriptionManagerClearCacheFromMessagesNewerThan
+    this.private.cacheObjectIfPossible = pn_subscriptionManagerCacheObjectIfPossible
+    this.private.cleanUpCachedObjectsIfRequired = pn_subscriptionManagerCleanUpCachedObjectsIfRequired
 
     this.presenceEnabledForChannel = pn_subscriptionManagerPresenceEnabledForChannel
     this.presenceEnabledForChannelGroup = pn_subscriptionManagerPresenceEnabledForChannelGroup
@@ -346,6 +353,94 @@ function pn_subscriptionManagerAllObjects() as Object
     return objects
 end function
 
+' brief:      Clean up 'events' list from messages which has been already received.
+' discussion: Use messages cache to identify message duplicates and remove them from input 'events'
+'             list so listeners won't receive them through callback methods again.
+' 
+' events  Reference on list of received events from real-time channels and should be clean up from
+'         message duplicates.
+'
+sub pn_subscriptionManagerDeDuplicateMessages(events = [] as Dynamic)
+    maximumMessagesCacheSize = m.config.maximumMessagesCacheSize
+    if maximumMessagesCacheSize > 0 then
+        for eventIdx = 0 to events.count() - 1 step 1
+            event = events[eventIdx]
+            if event <> invalid AND event.presenceEvent = invalid AND m.cacheObjectIfPossible(event, maximumMessagesCacheSize) = false then
+                events.delete(eventIdx)
+                eventIdx = eventIdx - 1
+            end if
+        end for
+        m.cleanUpCachedObjectsIfRequired(maximumMessagesCacheSize)
+    end if
+end sub
+
+' brief:      Remove from messages cache those who has date same or newer than passed 'timetoken'.
+' discussion: Method used for subscriptions where user pass specific 'timetoken' to which client 
+'             should catch up. It expensive to run, but subscriptions to specific 'timetoken' pretty
+'             rare and shouldn't affect overall performance. 
+'
+' timetoken  Reference on stringified timetoken which should be used as reference to file out 
+'            messages which should be removed.
+'
+sub pn_subscriptionManagerClearCacheFromMessagesNewerThan(timetoken as String)
+    maximumMessagesCacheSize = m.config.maximumMessagesCacheSize
+    if maximumMessagesCacheSize > 0 then
+        identifiers = PNObject(m.cachedObjects).allKeys()
+        identifiers.sort("i")
+        for identifierIdx = 0 to identifiers.count() - 1 step 1
+            identifier = identifiers[identifierIdx]
+            cachedTimetoken = identifier.split("_")[0]
+            if cachedTimetoken >= timetoken then
+                m.cachedObjects.delete(identifier)
+                PNArray(m.cachedObjectIdentifiers).delete(identifier)
+            end if
+        end for
+    end if
+end sub
+
+' brief:      Store to cache passed 'obj'.
+' discussion: This method used by 'de-dupe' logic to identify unique objects about which object 
+'             listeners should be notified.
+' 
+' obj  Reference on object which client should try to store in cache.
+' size Maximum number of objects which can be stored in cache and used during messages 
+'      de-dpublication process.
+'
+' return Whether object has been added to cache or not.
+'
+function pn_subscriptionManagerCacheObjectIfPossible(obj = invalid as Dynamic, size = 0 as Integer) as Boolean
+    cached = false
+    if obj <> invalid then
+        identifier = obj.timetoken+"_"+obj.channel
+        objects = PNObject(m.cachedObjects[identifier]).default([])
+        cachedMessagesCount = objects.count()
+        if cachedMessagesCount = 0 OR PNArray(objects).contains(obj.message) = false then objects.push(obj.message)
+        if cachedMessagesCount = 0 then m.cachedObjects[identifier] = objects
+        cached = cachedMessagesCount <> objects.count()
+        
+        if cached = true then m.cachedObjectIdentifiers.push(identifier)
+    end if
+    
+    return cached
+end function
+
+' brief:  Shrink messages cache size to specified size if required.
+'
+' maximumCacheSize Messages cache maximum size.
+'
+sub pn_subscriptionManagerCleanUpCachedObjectsIfRequired(maximumCacheSize = 0 as Integer)
+    if m.cachedObjectIdentifiers.count() > maximumCacheSize then
+        identifier = m.cachedObjectIdentifiers[0]
+        objects = m.cachedObjects[identifier]
+        if objects <> invalid AND objects.count() = 1 then
+            m.cachedObjects.delete(identifier)
+        else
+            objects.delete(0)
+        end if
+        m.cachedObjectIdentifiers.delete(0)
+    end if
+end sub
+
 
 '******************************************************
 '
@@ -393,6 +488,7 @@ end sub
 
 sub pn_subscriptionManagerHandleSuccessSubscriptionStatus(status as Object, data as Object)
     initial = data.initialSubscribe
+    data.overrideTimeToken = data.context.private.overrideTimetoken
     if status.data.timetoken <> invalid AND status.request <> invalid then
         tokenInformation = "Did receive next subscription loop information: timetoken = "+status.data.timetoken+", region = "+box(status.data.region).toStr()
         ?tokenInformation
@@ -520,10 +616,28 @@ sub pn_subscriptionManagerHandleSubscriptionToken(status as Object, data as Obje
 end sub
 
 sub pn_subscriptionManagerHandleLiveFeedEvents(status as Object, data as Object)
+    initial = data.initialSubscribe
     events = PNObject(status).valueAtKeyPath("private.response.events")
+    d1 = {channel:"ch1",subscription:"ch1",message:{hello:["there from brightscript"]},timetoken:"14801089687362522"}
+    d2 = {channel:"ch2",subscription:"ch2",message:{hello:["there from brightscript"]},timetoken:"14801089687362542"}
+    d3 = {channel:"ch1",subscription:"ch1",message:{hello:["there from brightscript"]},timetoken:"14801089687362542"}
+    d4 = {channel:"ch3",subscription:"ch3",message:{hello:["there from brightscript"]},timetoken:"14801089687362642"}
+    d5 = {channel:"ch1",subscription:"ch1",message:{hello:["there from brightscript"]},timetoken:"14801089687362538"}
+    d6 = {channel:"ch4",subscription:"ch4",message:{hello:["there from brightscript"]},timetoken:"14801089687362582"}
+    d7 = {channel:"ch1",subscription:"ch1",message:{hello:["there from brightscript"]},timetoken:"14801089687362542"}
+    d8 = {channel:"ch4",subscription:"ch4",message:{hello:["there from brightscript"]},timetoken:"14801089687362562"}
+    d9 = {channel:"ch5",subscription:"ch5",message:{hello:["there from brightscript"]},timetoken:"14801089687362532"}
+    events = [d1, d2, d3, d4, d5, d6, d7, d8, d9]
     requestMessageCountThreshold = data.context.private.config.requestMessageCountThreshold
     if PNArray(events).isEmpty() = false then
-        if requestMessageCountThreshold > 0 AND events.count() >= requestMessageCountThreshold then
+        eventsCount = events.count()
+        
+        if data.initialSubscribe = true AND data.overrideTimeToken <> invalid AND data.overrideTimeToken > "0" then
+            data.context.private.clearCacheFromMessagesNewerThan(data.overrideTimeToken)
+        end if
+        data.context.private.deDuplicateMessages(events)
+        
+        if requestMessageCountThreshold > 0 AND eventsCount >= requestMessageCountThreshold then
             exceedStatus = status.private.copyWithMutatedData(status, invalid)
             exceedStatus.private.updateCategory(exceedStatus, PNStatusCategory().PNRequestMessageCountExceededCategory)
             exceedStatus.data.delete("region")
@@ -667,7 +781,7 @@ sub pn_subscriptionManagerUnsubscribeHandler(status = invalid as Dynamic, data =
         pn_subscriptionManagerHandleStateChange(successStatus, "disconnected", data)
     end if
     
-    listChanged = PNArray(data.allObjects).isEqual(data.context.private.allObjects()) = false
+    listChanged = PNArray(data.allObjects).isEqualContent(data.context.private.allObjects()) = false
     if  PNObject(data.params.subscribeOnRest).default(true) = true AND data.context.private.allObjects().count() > 0 AND listChanged = false then
         data.context.private.readyForNextSubscriptionLoop = true
         data.context.private.nextSubscriptionLoopAsinitial = true
