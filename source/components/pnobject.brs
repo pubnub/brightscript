@@ -12,6 +12,8 @@ function PNObject(obj = invalid as Dynamic) as Object
     this.copy = pn_objectShallowCopy
     this.toQueryString = pn_objectToQueryString
     this.isDictionary = pn_objectIsDictionary
+    this.isEqual = pn_objectIsEqual
+    this.isEqualToDictionary = pn_arrayIsEqualToDictionary
     this.toString = pn_objectToString
     
     return this
@@ -109,6 +111,58 @@ function pn_objectIsDictionary() as Boolean
     return m.private.value <> invalid AND type(m.private.value) = "roAssociativeArray"
 end function
 
+' brief:  Check whether passed object is equal to receiver or not.
+'
+' obj  Reference on second object against which check should be done.
+'
+function pn_objectIsEqual(obj = invalid as Dynamic) as Boolean
+    isEqual = false
+    ' Ensure what both objects has been provided and has same data type.
+    if m.private.value <> invalid AND obj <> invalid then
+        if type(m.private.value) = type(obj) then
+            ' Check whether both objects are collections and should be checked according to their 
+            ' type.
+            if getInterface(m.private.value, "ifEnum") <> invalid AND getInterface(obj, "ifEnum") <> invalid then
+                if m.isDictionary() = true then
+                    isEqual = m.isEqualToDictionary(obj, false)
+                else
+                    isEqual = PNArray(m.private.value).isEqualToArray(obj, false)
+                end if
+            else
+                isEqual = (m.private.value = obj)
+            end if
+        end if
+    end if
+    
+    return isEqual
+end function
+
+' brief:  Check whether stored and passed objects are dictionaries and their content is equal.
+'
+' obj    Reference on second object against which check should be done.
+' check  Whether passed object types should be verified or not.
+'
+function pn_arrayIsEqualToDictionary(obj = invalid as Dynamic, check = true as Boolean) as Boolean
+    isEqual = false
+    if check = true AND m.isDictionary() = true and PNObject(obj).isDictionary() = true OR check = false then
+        isEqual = m.private.value.count() = obj.count()
+        if isEqual = true then
+            for each key in m.private.value
+                value1 = m.private.value[key]
+                value2 = obj[key]
+                if value1 <> invalid AND value2 <> invalid then
+                    isEqual = PNObject(value1).isEqual(value2)
+                else
+                    isEqual = (value1 = invalid AND value2 = invalid)
+                end if
+                if isEqual = false then exit for
+            end for
+        end if
+    end if
+    
+    return isEqual
+end function
+
 ' brief:  Print object's content as prettified JSON string.
 '
 ' indentation  Current indentation level which should be used to print content.
@@ -122,10 +176,10 @@ function pn_objectToString(indentation = 0 as Integer, obj = invalid as Dynamic,
         if indentation = -1 then indentation = 0
         indentation = indentation + tabSize
         for itemIdx=0 to targetValue.count() - 1 step 1
-            value = targetValue.getEntry(itemIdx)
+            value = targetValue[itemIdx]
             output = output + PNString(" ").repeat(indentation) 
             if value <> invalid then
-                output = output + m.toString(indentation, targetValue.getEntry(itemIdx)) + chr(10)
+                output = output + m.toString(indentation, targetValue[itemIdx]) + chr(10)
             else
                 output = output + "invalid" + chr(10)
             end if

@@ -23,7 +23,7 @@ sub main()
 ' PubNub events listener configuration.
 '
 '******************************************************
-'    client.addListener(PNObjectEventListener())
+    client.addListener(PNObjectEventListener())
 
 
 '******************************************************
@@ -31,7 +31,7 @@ sub main()
 ' Subscription example.
 '
 '******************************************************
-'    client.subscribe({channels: ["roku-channel"], withPresence: false, "state":{"roku-channel":{"welcome":"online"}}})
+    client.subscribe({channels: ["roku-channel"], withPresence: false, "state":{"roku-channel":{"welcome":"online"}}})
 
 
 '******************************************************
@@ -335,7 +335,7 @@ function PNObjectEventListener() as Object
             ?"{INFO} Received '"+presence.data.presenceEvent+"' presence event with details:", presence.data.presence
         end function
         message: function(client as Object, message as Object)
-            ?"{INFO} Received message from '"+message.data.publisher+"' on '"+message.data.channel+"': ",message.data.message
+            ?"{INFO} Received message from '"+box(message.data.publisher).toStr()+"' on '"+message.data.channel+"': ",message.data.message
         end function
     }
 end function

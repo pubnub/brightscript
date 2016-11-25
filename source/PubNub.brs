@@ -2,7 +2,7 @@ function PubNub(config as Object, port as Object) as Object
     this = {
         private: {
             config: {
-                version: "0.0.1"
+                version: "4.0.0"
                 publishKey: PNObject(config.publishKey).default("")
                 subscribeKey: PNObject(config.subscribeKey).default("")
                 authKey: config.authKey
@@ -22,6 +22,7 @@ function PubNub(config as Object, port as Object) as Object
                 restoreSubscription: PNObject(config.restoreSubscription).default(true)
                 catchUpOnSubscriptionRestore: PNObject(config.catchUpOnSubscriptionRestore).default(true)
                 requestMessageCountThreshold: PNObject(config.requestMessageCountThreshold).default(0)
+                maximumMessagesCacheSize: PNObject(config.maximumMessagesCacheSize).default(100)
             }
         }
     }
