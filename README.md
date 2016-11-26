@@ -17,6 +17,7 @@ Full list of parameters which can be used for client configuration listed below:
 | ------------------------------ |:--------:|:--------:|:------------|
 | `subscribeKey`                 | roString |   Yes    | Reference on key which is used to fetch data/state from **PubNub** service.<br>This key can be obtained on PubNub's administration portal after free registration https://admin.pubnub.com |
 | `publishKey`                   | roString |   Yes    | Reference on key which is used to push data/state to **PubNub** service.<br>This key can be obtained on PubNub's administration portal after free registration https://admin.pubnub.com |
+| `authKey`                      | roString |    No    | Reference on key which is used along with every request to **PubNub** service to identify client user. |
 | `uuid`                         | roString |    No    | Reference on unique client identifier used to identify concrete client user from another which currently use **PubNub** services. |
 | `origin`                       | roString |    No    | Reference on host name or IP address which should be used by client to get access to **PubNub** services.<br>**Default**: _pubsub.pubnub.com_ |
 | `secure`                       | Boolean  |    No    | Whether client should use secured connection to **PubNub** service or not.<br>**Default**: _true_ |
@@ -26,6 +27,7 @@ Full list of parameters which can be used for client configuration listed below:
 | `presenceHeartbeatInterval`    | Integer  |    No    | Number of seconds which is used by client to issue heartbeat requests to **PubNub** service. |
 | `notifyHeartbeatFailure`       | Boolean  |    No    | Whether client's state observer should be notified about heartbeat request processing failure or not.<br>**Default**: _true_ |
 | `notifyHeartbeatSuccess`       | Boolean  |    No    | Whether client's state observer should be notified about heartbeat request processing success or not.<br>**Default**: _false_ |
+| `keepTimeTokenOnListChange`    | Boolean  |    No    | Whether client should keep previous time token when subscribe on new set of remote data objects live feeds.<br>**Default**: _true_ |
 | `restoreSubscription`          | Boolean  |    No    | Whether client should restore subscription on remote data objects live feed after network connection restoring or not.<br>**Default**: _true_ |
 | `catchUpOnSubscriptionRestore` | Boolean  |    No    | client should try to catch up for events which occurred on previously subscribed remote data objects feed while client was off-line.<br>**Default**: _true_ |
 | `requestMessageCountThreshold` | Boolean  |    No    | Number of maximum expected messages from **PubNub** service in single response.<br>**Default**: _0_ |
