@@ -1,6 +1,4 @@
-# brightscript
-
-
+# PubNub SDK for Roku Devices (BrightScript)
 
 ## Initialization
 
