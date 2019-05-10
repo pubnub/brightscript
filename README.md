@@ -4,8 +4,8 @@
 
 ```brightscript
 client = PubNub({
-    subscribeKey: "demo-36",
-    publishKey: "demo-36",
+    subscribeKey: "demo",
+    publishKey: "demo",
     uuid: "roku-client",
 }, messagePort)
 ```  
