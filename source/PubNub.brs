@@ -10,7 +10,7 @@ function PubNub(config as Object, port as Object) as Object
                 origin: PNObject(config.origin).default("pubsub.pubnub.com")
                 secure: PNObject(config.secure).default(true)
                 cipherKey: config.cipherKey
-                deviceID: createObject("roDeviceInfo").getDeviceUniqueId()
+                deviceID: createObject("roDeviceInfo").GetChannelClientId()
                 instanceID: createObject("roDeviceInfo").getRandomUUID()
                 subscribeMaximumIdleTime: PNObject(config.subscribeMaximumIdleTime).default(310)
                 nonSubscribeRequestTimeout: PNObject(config.nonSubscribeRequestTimeout).default(10)
