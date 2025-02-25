@@ -1,17 +1,17 @@
-function PNPNHeartbeatManager(configuration as Object, networkManager as Object, listenerManager as Object, stateManager as Object) as Object
-    this = {private: {config: configuration, shouldHandleRunLoopMessages: true}}
+function PNPNHeartbeatManager(configuration as object, networkManager as object, listenerManager as object, stateManager as object) as object
+    this = { private: { config: configuration, shouldHandleRunLoopMessages: true } }
     this.private.handleHeartbeatTimer = pn_heartbeatHandleTimer
-    
+
     this.private.networkManager = networkManager
     this.private.listenerManager = listenerManager
     this.private.stateManager = stateManager
     this.private.setSubscribeManager = pn_heartbeatManagerSetSubscribeManager
-    
+
     this.startHeartbeatIfRequired = pn_heartbeatManagerStartIfRequired
     this.stopHeartbeatIfPossible = pn_heartbeatManagerStopIfPossible
     this.handleMessage = pn_heartbeatManagerHandleMessage
     this.destroy = pn_heartbeatManagerDestroy
-    
+
     return this
 end function
 
@@ -22,13 +22,13 @@ end function
 '
 '******************************************************
 
-sub pn_heartbeatManagerSetSubscribeManager(subscribeManager as Object)
+sub pn_heartbeatManagerSetSubscribeManager(subscribeManager as object)
     m.subscribeManager = subscribeManager
 end sub
 
 function pn_heartbeatManagerStartIfRequired()
     m.stopHeartbeatIfPossible()
-    
+
     ' Check whether client configured for heartbeat sending or not.
     if PNObject(m.private.config.presenceHeartbeatInterval).default(0) > 0 then
         m.private.clock = PNTimer(m.private.config.presenceHeartbeatInterval, m, m.private.handleHeartbeatTimer, true)
@@ -41,7 +41,7 @@ function pn_heartbeatManagerStopIfPossible()
     m.private.delete("clock")
 end function
 
-sub pn_heartbeatManagerHandleMessage(message = invalid as Dynamic)
+sub pn_heartbeatManagerHandleMessage(message = invalid as dynamic)
     if m.private.shouldHandleRunLoopMessages = true then
         if m.private.clock <> invalid then m.private.clock.tick()
     end if
@@ -50,23 +50,23 @@ end sub
 sub pn_heartbeatHandleTimer(context)
     privateData = context.private
     objects = PNChannel().objectsWithOutPresenceFrom(privateData.subscribeManager.private.allObjects())
-    if PNObject(objects).default([]).count() > 0 AND PNObject(privateData.config.presenceHeartbeatValue).default(0) > 0 then 
+    if PNObject(objects).default([]).count() > 0 and PNObject(privateData.config.presenceHeartbeatValue).default(0) > 0 then
         channels = privateData.subscribeManager.channels()
         groups = privateData.subscribeManager.channelGroups()
-        
+
         ' Prepare information which should be used during REST API call URL preparation.
-        request = {path:{}, query: {}, operation: PNOperationType().PNHeartbeatOperation}
+        request = { path: {}, query: {}, operation: PNOperationType().PNHeartbeatOperation }
         request.path["{channels}"] = PNChannel().namesForRequestWithDefaultValue(channels, ",")
-        if groups.count() > 0 then request.query["channel-group"] = PNChannel().namesForRequest(channelGroups)
+        if groups.count() > 0 then request.query["channel-group"] = PNChannel().namesForRequest(groups)
         request.query["heartbeat"] = privateData.config.presenceHeartbeatValue
-        
+
         state = privateData.stateManager.state()
         if state <> invalid then
             stateString = formatJSON(state)
             if PNString(stateString).isEmpty() = false then request.query["state"] = PNString(stateString).escape()
         end if
-        
-        callbackData = {context: context}
+
+        callbackData = { context: context }
         privateData.networkManager.processOperation(request.operation, request, invalid, callbackData, pn_heartbeatManagerHandleOperationStatus)
     else
         context.stopHeartbeatIfPossible()
@@ -78,12 +78,12 @@ end sub
 ' status  Reference on API calling status object.
 ' data    Reference on object which contain information which is required to retry API call.
 '
-sub pn_heartbeatManagerHandleOperationStatus(status = invalid as Dynamic, data = {} as Object)
+sub pn_heartbeatManagerHandleOperationStatus(status = invalid as dynamic, data = {} as object)
     privateData = data.context.private
     config = privateData.config
-    if config.notifyHeartbeatFailure = true OR config.notifyHeartbeatSuccess = true then
-        shouldNotify = status.error = true AND config.notifyHeartbeatFailure = true
-        if shouldNotify = true OR status.error = false AND config.notifyHeartbeatSuccess = true
+    if config.notifyHeartbeatFailure = true or config.notifyHeartbeatSuccess = true then
+        shouldNotify = status.error = true and config.notifyHeartbeatFailure = true
+        if shouldNotify = true or status.error = false and config.notifyHeartbeatSuccess = true
             privateData.listenerManager.announceStatus(status)
         end if
     end if

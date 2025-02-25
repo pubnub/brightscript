@@ -1,4 +1,4 @@
-Function PNSubscribeManager(config as Object, networkManager as Object, listenerManager as Object, stateManager as Object, heartbeatManager as Object) as Object
+function PNSubscribeManager(config as object, networkManager as object, listenerManager as object, stateManager as object, heartbeatManager as object) as object
     this = {
         private: {
             config: config
@@ -20,17 +20,17 @@ Function PNSubscribeManager(config as Object, networkManager as Object, listener
             overrideTimetoken: invalid
             mayRequireSubscriptionRestore: false
             state: "initialized"
-            
+
             retryTimer: invalid
             shouldRetrySubscription: false
-            
+
             networkManager: networkManager
             listenerManager: listenerManager
             stateManager: stateManager
             heartbeatManager: heartbeatManager
         }
-        channels: function():return m.private.channels:end function
-        channelGroups: function():return m.private.channelGroups:end function
+        channels: function(): return m.private.channels: end function
+        channelGroups: function(): return m.private.channelGroups: end function
     }
 
     this.private.addChannels = pn_subscriptionManagerAddChannels
@@ -40,14 +40,14 @@ Function PNSubscribeManager(config as Object, networkManager as Object, listener
     this.private.addChannelGroups = pn_subscriptionManagerAddChannelGroups
     this.private.removeChannelGroups = pn_subscriptionManagerRemoveChannelGroups
     this.private.channelGroupObjects = pn_subscriptionManagerAllChannelGroupObjects
-    
+
     this.private.subscribeRequest = pn_subscriptionManagerSubscribeRequest
     this.private.startRetryTimer = pn_subscriptionManagerStartRetryTimer
     this.private.stopRetryTimer = pn_subscriptionManagerStopRetryTimer
     this.private.handleRetryTimer = pn_subscriptionManagerHandleRetryTimer
 
     this.private.allObjects = pn_subscriptionManagerAllObjects
-    
+
     this.private.deDuplicateMessages = pn_subscriptionManagerDeDuplicateMessages
     this.private.clearCacheFromMessagesNewerThan = pn_subscriptionManagerClearCacheFromMessagesNewerThan
     this.private.cacheObjectIfPossible = pn_subscriptionManagerCacheObjectIfPossible
@@ -61,7 +61,7 @@ Function PNSubscribeManager(config as Object, networkManager as Object, listener
 
     this.unsubscribe = pn_subscriptionManagerUnsubscribe
     this.unsubscribeAll = pn_subscriptionManagerUnsubscribeFromAll
-    
+
     this.handleMessage = pn_subscriptionManagerHandleMessage
     this.destroy = pn_subscriptionManagerDestroy
 
@@ -75,15 +75,15 @@ end function
 '
 '******************************************************
 
-sub pn_subscriptionManagerSubscribe(params as Object, initialSubscribe = true as Boolean, callback = invalid as Dynamic)
+sub pn_subscriptionManagerSubscribe(params as object, initialSubscribe = true as boolean, callback = invalid as dynamic)
     ' Initialize default values.
     if type(callback) = "<uninitialized>" then callback = invalid
-    
+
     ' Break subscription loop and stop subscription retry timer.
     m.private.readyForNextSubscriptionLoop = false
     m.private.nextSubscriptionLoopAsinitial = false
     m.private.stopRetryTimer()
-    
+
     ' Ensure what there is some data objects to which client should be able to subscribe
     if m.private.allObjects().count() > 0 then
         m.private.overrideTimetoken = params.timetoken
@@ -106,7 +106,7 @@ sub pn_subscriptionManagerSubscribe(params as Object, initialSubscribe = true as
         ' Configure subscribe request
         request = m.private.subscribeRequest(params)
         request.operation = PNOperationType().PNSubscribeOperation
-        callbackData = {callback: callback, context: m, params: params, client: invalid, func: "subscribe"}
+        callbackData = { callback: callback, context: m, params: params, client: invalid, func: "subscribe" }
         callbackData.initialSubscribe = initialSubscribe
         m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, pn_subscriptionManagerSubscribeHandler)
     else
@@ -122,31 +122,31 @@ sub pn_subscriptionManagerSubscribe(params as Object, initialSubscribe = true as
         m.private.lastTimeToken = "0"
         m.private.currentTimeTokenRegion = invalid
         m.private.lastTimeTokenRegion = invalid
-        
+
         if callback <> invalid then callback(status)
-        pn_subscriptionManagerHandleStateChange(status, "disconnected", {context: m})
+        pn_subscriptionManagerHandleStateChange(status, "disconnected", { context: m })
         m.private.networkManager.private.cancelSubscriptionRequest()
     end if
 end sub
 
 sub pn_subscriptionManagerUnsubscribeFromAll()
-    if m.private.channelObjects().count() > 0 OR m.private.channelGroupObjects().count() > 0 then
+    if m.private.channelObjects().count() > 0 or m.private.channelGroupObjects().count() > 0 then
         channels = PNObject(m.private.channelObjects()).copy()
         groups = PNObject(m.private.channelGroupObjects()).copy()
         m.removeChannels(channels, true)
         m.removeChannelGroups(groups, true)
-        m.unsubscribe({channels: objects, channelGroups: groups, informingListener: true, subscribeOnRest: false})
+        m.unsubscribe({ channels: channels, channelGroups: groups, informingListener: true, subscribeOnRest: false })
     end if
 end sub
 
-sub pn_subscriptionManagerUnsubscribe(params as Object, callback = invalid as Dynamic) 
+sub pn_subscriptionManagerUnsubscribe(params as object, callback = invalid as dynamic)
     ' Initialize default values.
     if type(callback) = "<uninitialized>" then callback = invalid
-    
+
     ' Break subscription loop and stop subscription retry timer.
     m.private.readyForNextSubscriptionLoop = false
     m.private.nextSubscriptionLoopAsinitial = false
-    
+
     m.private.stateManager.removeStateForObjects(params.channels)
     m.private.stateManager.removeStateForObjects(params.channelGroups)
     channels = PNChannel().objectsWithOutPresenceFrom(params.channels)
@@ -159,7 +159,7 @@ sub pn_subscriptionManagerUnsubscribe(params as Object, callback = invalid as Dy
     })
     successStatus = PNStatus(emptyRequest)
     successStatus.append(m.private.networkManager.private.clientInformation())
-    
+
     subscriptionObjects = PNObject(m.private.allObjects()).default([])
     if subscriptionObjects.count() = 0 then
         m.private.currentTimeToken = "0"
@@ -167,27 +167,27 @@ sub pn_subscriptionManagerUnsubscribe(params as Object, callback = invalid as Dy
         m.private.currentTimeTokenRegion = invalid
         m.private.lastTimeTokenRegion = invalid
     end if
-    
+
     if subscriptionObjects.count() > 0 then
         channelsList = PNChannel().namesForRequestWithDefaultValue(channels, ",")
         groupsList = PNChannel().namesForRequest(channelGroups)
 
         ' Configure unsubscribe request
-        request = {path:{"{channels}": channelsList}, query: {}}
-        if channelsList = invalid AND groupsList <> invalid then request.query["channel-group"] = groupsList
+        request = { path: { "{channels}": channelsList }, query: {} }
+        if channelsList = invalid and groupsList <> invalid then request.query["channel-group"] = groupsList
         request.operation = PNOperationType().PNUnsubscribeOperation
-        callbackData = {callback: callback, context: m, params: params, allObjects: PNObject(subscriptionObjects).copy()}
+        callbackData = { callback: callback, context: m, params: params, allObjects: PNObject(subscriptionObjects).copy() }
         m.private.networkManager.processOperation(request.operation, request, invalid, callbackData, pn_subscriptionManagerUnsubscribeHandler)
     else
-        subscribeCallback = function(status = invalid as Dynamic, data = {} as Object)
+        subscribeCallback = function(status = invalid as dynamic, data = {} as object)
             if data.callback <> invalid then data.callback(data)
             if PNObject(data.params.informingListener).default(true) = true then
                 successStatus = data.successStatus
                 data.delete("successStatus")
-                pn_subscriptionManagerHandleStateChange(data.successStatus, "disconnected", {context: data})
+                pn_subscriptionManagerHandleStateChange(data.successStatus, "disconnected", { context: data })
             end if
         end function
-        m.subscribe({callback: callback, context: m, params: params, successStatus: successStatus}, true, subscribeCallback)
+        m.subscribe({ callback: callback, context: m, params: params, successStatus: successStatus }, true, subscribeCallback)
     end if
 end sub
 
@@ -202,8 +202,8 @@ end sub
 '
 ' params  Object with values which should be used with API call.
 '
-function pn_subscriptionManagerSubscribeRequest(params as Object) as Object
-    request = {path:{}, query: {}}
+function pn_subscriptionManagerSubscribeRequest(params as object) as object
+    request = { path: {}, query: {} }
     allObjects = m.allObjects()
     channelsList = PNChannel().namesForRequestWithDefaultValue(m.channelObjects(), ",")
     groupsList = PNChannel().namesForRequest(m.channelGroupObjects())
@@ -216,32 +216,32 @@ function pn_subscriptionManagerSubscribeRequest(params as Object) as Object
         request.query["heartbeat"] = m.config.presenceHeartbeatInterval
     end if
     if PNString(groupsList).isEmpty() = false then request.query["channel-group"] = groupsList
-    if mergedState <> invalid AND mergedState.count() > 0 then
+    if mergedState <> invalid and mergedState.count() > 0 then
         mergedStateString = formatJSON(mergedState)
         if PNString(mergedStateString).isEmpty() = false then request.query["state"] = PNString(mergedStateString).escape()
     end if
-    
-    if PNString(m.escapedFilterExpression).isEmpty() = false then 
+
+    if PNString(m.escapedFilterExpression).isEmpty() = false then
         request.query["filter-expr"] = m.escapedFilterExpression
     end if
     request.query["string_message_token"] = "true"
-    
+
     return request
 end function
 
 ' brief:      Launch subscription retry timer.
-' discussion: Launch timer with default 1 second interval after each subscribe attempt. In most of 
-'             cases timer used to retry subscription after PubNub Access Manager denial because of 
+' discussion: Launch timer with default 1 second interval after each subscribe attempt. In most of
+'             cases timer used to retry subscription after PubNub Access Manager denial because of
 '             client doesn't has enough rights.
 '
 sub pn_subscriptionManagerStartRetryTimer()
     m.stopRetryTimer()
-    m.retryTimer = PNTimer(1, {context: m}, m.handleRetryTimer, false)
+    m.retryTimer = PNTimer(1, { context: m }, m.handleRetryTimer, false)
     m.retryTimer.start()
 end sub
 
 ' brief:      Terminate previously launched subscription retry counter.
-' discussion: In case if another subscribe request from user client better to stop retry timer to 
+' discussion: In case if another subscribe request from user client better to stop retry timer to
 '             eliminate race of conditions.
 '
 sub pn_subscriptionManagerStopRetryTimer()
@@ -261,12 +261,12 @@ REM Data objects management
 REM
 REM ******************************************************
 
-function pn_subscriptionManagerAddChannels(channels = invalid as Dynamic, withPresence = false as Boolean)
+function pn_subscriptionManagerAddChannels(channels = invalid as dynamic, withPresence = false as boolean)
     if PNArray(channels).isArray() = true then
         for each channel in channels
             isPresenceChannel = PNString(channel).hasSuffix("-pnpres")
             if isPresenceChannel = true then objects = m.presenceChannels else objects = m.channels
-            if withPresence = true AND isPresenceChannel = false then
+            if withPresence = true and isPresenceChannel = false then
                 presenceChannel = channel + "-pnpres"
                 if PNArray(m.presenceChannels).contains(presenceChannel) = false then
                     m.presenceChannels.push(presenceChannel)
@@ -277,12 +277,12 @@ function pn_subscriptionManagerAddChannels(channels = invalid as Dynamic, withPr
     end if
 end function
 
-function pn_subscriptionManagerRemoveChannels(channels = invalid as Dynamic, withPresence = false as Boolean)
+function pn_subscriptionManagerRemoveChannels(channels = invalid as dynamic, withPresence = false as boolean)
     if PNArray(channels).isArray() = true then
         for each channel in channels
             isPresenceChannel = PNString(channel).hasSuffix("-pnpres")
             if isPresenceChannel = true then objects = m.presenceChannels else objects = m.channels
-            if withPresence = true AND isPresenceChannel = false then
+            if withPresence = true and isPresenceChannel = false then
                 presenceChannel = channel + "-pnpres"
                 PNArray(m.presenceChannels).delete(presenceChannel)
             end if
@@ -291,11 +291,11 @@ function pn_subscriptionManagerRemoveChannels(channels = invalid as Dynamic, wit
     end if
 end function
 
-function pn_subscriptionManagerPresenceEnabledForChannel(channel as String) as Boolean
+function pn_subscriptionManagerPresenceEnabledForChannel(channel as string) as boolean
     return PNArray(m.private.presenceChannels).contains(channel + "-pnpres")
 end function
 
-function pn_subscriptionManagerAllChannelObjects() as Object
+function pn_subscriptionManagerAllChannelObjects() as object
     objects = []
     objects.append(m.channels)
     objects.append(m.presenceChannels)
@@ -303,15 +303,15 @@ function pn_subscriptionManagerAllChannelObjects() as Object
     return objects
 end function
 
-function pn_subscriptionManagerAddChannelGroups(groups = invalid as Dynamic, withPresence = false as Boolean)
+function pn_subscriptionManagerAddChannelGroups(groups = invalid as dynamic, withPresence = false as boolean)
     if PNArray(groups).isArray() = true then
         for each group in groups
             isPresenceGroup = PNString(group).hasSuffix("-pnpres")
             if isPresenceGroup = true then objects = m.presenceChannelGroups else objects = m.channelGroups
-            if withPresence = true AND isPresenceGroup = false then
+            if withPresence = true and isPresenceGroup = false then
                 presenceGroup = group + "-pnpres"
                 if PNArray(m.presenceChannelGroups).contains(presenceGroup) = false then
-                    m.presenceChannelGroups.push(private.presenceChannelGroups)
+                    m.presenceChannelGroups.push(m.presenceChannelGroups)
                 end if
             end if
             if PNArray(objects).contains(group) = false then objects.push(group)
@@ -319,12 +319,12 @@ function pn_subscriptionManagerAddChannelGroups(groups = invalid as Dynamic, wit
     end if
 end function
 
-function pn_subscriptionManagerRemoveChannelGroups(groups as Object, withPresence as Boolean)
+function pn_subscriptionManagerRemoveChannelGroups(groups as object, withPresence as boolean)
     if PNArray(groups).isArray() = true then
         for each group in groups
             isPresenceGroup = PNString(group).hasSuffix("-pnpres")
             if isPresenceGroup = true then objects = m.presenceChannelGroups else objects = m.channelGroups
-            if withPresence = true AND isPresenceGroup = false then
+            if withPresence = true and isPresenceGroup = false then
                 presenceGroup = group + "-pnpres"
                 PNArray(m.presenceChannelGroups).delete(presenceGroup)
             end if
@@ -333,11 +333,11 @@ function pn_subscriptionManagerRemoveChannelGroups(groups as Object, withPresenc
     end if
 end function
 
-function pn_subscriptionManagerPresenceEnabledForChannelGroup(channelGroup as String) as Boolean
+function pn_subscriptionManagerPresenceEnabledForChannelGroup(channelGroup as string) as boolean
     return PNArray(m.private.presenceChannelGroups).contains(channelGroup + "-pnpres")
 end function
 
-function pn_subscriptionManagerAllChannelGroupObjects() as Object
+function pn_subscriptionManagerAllChannelGroupObjects() as object
     objects = []
     objects.append(m.channelGroups)
     objects.append(m.presenceChannelGroups)
@@ -345,7 +345,7 @@ function pn_subscriptionManagerAllChannelGroupObjects() as Object
     return objects
 end function
 
-function pn_subscriptionManagerAllObjects() as Object
+function pn_subscriptionManagerAllObjects() as object
     objects = []
     objects.append(m.channelObjects())
     objects.append(m.channelGroupObjects())
@@ -356,16 +356,16 @@ end function
 ' brief:      Clean up 'events' list from messages which has been already received.
 ' discussion: Use messages cache to identify message duplicates and remove them from input 'events'
 '             list so listeners won't receive them through callback methods again.
-' 
+'
 ' events  Reference on list of received events from real-time channels and should be clean up from
 '         message duplicates.
 '
-sub pn_subscriptionManagerDeDuplicateMessages(events = [] as Dynamic)
+sub pn_subscriptionManagerDeDuplicateMessages(events = [] as dynamic)
     maximumMessagesCacheSize = m.config.maximumMessagesCacheSize
     if maximumMessagesCacheSize > 0 then
         for eventIdx = 0 to events.count() - 1 step 1
             event = events[eventIdx]
-            if event <> invalid AND event.presenceEvent = invalid AND m.cacheObjectIfPossible(event, maximumMessagesCacheSize) = false then
+            if event <> invalid and event.presenceEvent = invalid and m.cacheObjectIfPossible(event, maximumMessagesCacheSize) = false then
                 events.delete(eventIdx)
                 eventIdx = eventIdx - 1
             end if
@@ -375,14 +375,14 @@ sub pn_subscriptionManagerDeDuplicateMessages(events = [] as Dynamic)
 end sub
 
 ' brief:      Remove from messages cache those who has date same or newer than passed 'timetoken'.
-' discussion: Method used for subscriptions where user pass specific 'timetoken' to which client 
+' discussion: Method used for subscriptions where user pass specific 'timetoken' to which client
 '             should catch up. It expensive to run, but subscriptions to specific 'timetoken' pretty
-'             rare and shouldn't affect overall performance. 
+'             rare and shouldn't affect overall performance.
 '
-' timetoken  Reference on stringified timetoken which should be used as reference to file out 
+' timetoken  Reference on stringified timetoken which should be used as reference to file out
 '            messages which should be removed.
 '
-sub pn_subscriptionManagerClearCacheFromMessagesNewerThan(timetoken as String)
+sub pn_subscriptionManagerClearCacheFromMessagesNewerThan(timetoken as string)
     maximumMessagesCacheSize = m.config.maximumMessagesCacheSize
     if maximumMessagesCacheSize > 0 then
         identifiers = PNObject(m.cachedObjects).allKeys()
@@ -399,28 +399,28 @@ sub pn_subscriptionManagerClearCacheFromMessagesNewerThan(timetoken as String)
 end sub
 
 ' brief:      Store to cache passed 'obj'.
-' discussion: This method used by 'de-dupe' logic to identify unique objects about which object 
+' discussion: This method used by 'de-dupe' logic to identify unique objects about which object
 '             listeners should be notified.
-' 
+'
 ' obj  Reference on object which client should try to store in cache.
-' size Maximum number of objects which can be stored in cache and used during messages 
+' size Maximum number of objects which can be stored in cache and used during messages
 '      de-dpublication process.
 '
 ' return Whether object has been added to cache or not.
 '
-function pn_subscriptionManagerCacheObjectIfPossible(obj = invalid as Dynamic, size = 0 as Integer) as Boolean
+function pn_subscriptionManagerCacheObjectIfPossible(obj = invalid as dynamic, size = 0 as integer) as boolean
     cached = false
     if obj <> invalid then
-        identifier = obj.timetoken+"_"+obj.channel
+        identifier = obj.timetoken + "_" + obj.channel
         objects = PNObject(m.cachedObjects[identifier]).default([])
         cachedMessagesCount = objects.count()
-        if cachedMessagesCount = 0 OR PNArray(objects).contains(obj.message) = false then objects.push(obj.message)
+        if cachedMessagesCount = 0 or PNArray(objects).contains(obj.message) = false then objects.push(obj.message)
         if cachedMessagesCount = 0 then m.cachedObjects[identifier] = objects
         cached = cachedMessagesCount <> objects.count()
-        
+
         if cached = true then m.cachedObjectIdentifiers.push(identifier)
     end if
-    
+
     return cached
 end function
 
@@ -428,11 +428,11 @@ end function
 '
 ' maximumCacheSize Messages cache maximum size.
 '
-sub pn_subscriptionManagerCleanUpCachedObjectsIfRequired(maximumCacheSize = 0 as Integer)
+sub pn_subscriptionManagerCleanUpCachedObjectsIfRequired(maximumCacheSize = 0 as integer)
     if m.cachedObjectIdentifiers.count() > maximumCacheSize then
         identifier = m.cachedObjectIdentifiers[0]
         objects = m.cachedObjects[identifier]
-        if objects <> invalid AND objects.count() = 1 then
+        if objects <> invalid and objects.count() = 1 then
             m.cachedObjects.delete(identifier)
         else
             objects.delete(0)
@@ -449,15 +449,15 @@ end sub
 '******************************************************
 
 ' brief:      Handle single 'run-loop tick'.
-' discussion: Function called by PubNub client on every 'run-loop tick' to check whether some 
+' discussion: Function called by PubNub client on every 'run-loop tick' to check whether some
 '             scheduled data retrieval arrived and should be processed or not.
 '
 ' message  Reference on event/message received from messages port object at 'run-loop tick'.
-' 
-sub pn_subscriptionManagerHandleMessage(message = invalid as Dynamic)
+'
+sub pn_subscriptionManagerHandleMessage(message = invalid as dynamic)
     if m.private.shouldHandleRunLoopMessages = true then
         if m.private.retryTimer <> invalid then m.private.retryTimer.tick()
-        if m.private.readyForNextSubscriptionLoop = true OR m.private.shouldRetrySubscription = true then
+        if m.private.readyForNextSubscriptionLoop = true or m.private.shouldRetrySubscription = true then
             m.subscribe({}, m.private.nextSubscriptionLoopAsinitial)
         end if
     end if
@@ -470,27 +470,27 @@ end sub
 ' status  Reference on API calling status object.
 ' data    Reference on object which contain information which is required to retry API call.
 '
-sub pn_subscriptionManagerSubscribeHandler(status = invalid as Dynamic, data = {} as Object)
+sub pn_subscriptionManagerSubscribeHandler(status = invalid as dynamic, data = {} as object)
     pn_subscriptionManagerSubsciptionStatusHandle(status, data)
     if data.callback <> invalid then
         if data.context <> invalid then data.callback(status, data.context) else data.callback(status)
     end if
 end sub
 
-sub pn_subscriptionManagerSubsciptionStatusHandle(status as Object, data as Object)
+sub pn_subscriptionManagerSubsciptionStatusHandle(status as object, data as object)
     data.context.private.stopRetryTimer()
-    if status.error = false AND status.category <> PNStatusCategory().PNCancelledCategory then
+    if status.error = false and status.category <> PNStatusCategory().PNCancelledCategory then
         pn_subscriptionManagerHandleSuccessSubscriptionStatus(status, data)
     else
         pn_subscriptionManagerHandleFailedSubscriptionStatus(status, data)
     end if
 end sub
 
-sub pn_subscriptionManagerHandleSuccessSubscriptionStatus(status as Object, data as Object)
+sub pn_subscriptionManagerHandleSuccessSubscriptionStatus(status as object, data as object)
     initial = data.initialSubscribe
     data.overrideTimeToken = data.context.private.overrideTimetoken
-    if status.data.timetoken <> invalid AND status.request <> invalid then
-        tokenInformation = "Did receive next subscription loop information: timetoken = "+status.data.timetoken+", region = "+box(status.data.region).toStr()
+    if status.data.timetoken <> invalid and status.request <> invalid then
+        tokenInformation = "Did receive next subscription loop information: timetoken = " + status.data.timetoken + ", region = " + box(status.data.region).toStr()
         ?tokenInformation
         pn_subscriptionManagerHandleSubscriptionToken(status, data)
     end if
@@ -501,7 +501,7 @@ sub pn_subscriptionManagerHandleSuccessSubscriptionStatus(status as Object, data
     if initial then pn_subscriptionManagerHandleStateChange(status, "connected", data)
 end sub
 
-sub pn_subscriptionManagerHandleFailedSubscriptionStatus(status as Object, data as Object)
+sub pn_subscriptionManagerHandleFailedSubscriptionStatus(status as object, data as object)
     privateData = data.context.private
     if status.category = PNStatusCategory().PNCancelledCategory then
         privateData.heartbeatManager.stopHeartbeatIfPossible()
@@ -517,16 +517,16 @@ sub pn_subscriptionManagerHandleFailedSubscriptionStatus(status as Object, data 
         if PNArray(autoretryEnabled).contains(status.category) = true then
             status.automaticallyRetry = status.category <> categories.PNMalformedFilterExpressionCategory
             if status.automaticallyRetry = true then privateData.startRetryTimer()
-            
+
             subscriberState = "accessRightsError"
             if status.category = categories.PNMalformedFilterExpressionCategory then
                 subscriberState = "malformedFilterExpressionError"
             end if
-            
-            if status.category <> categories.PNAccessDeniedCategory AND status.category <> categories.PNMalformedFilterExpressionCategory then
+
+            if status.category <> categories.PNAccessDeniedCategory and status.category <> categories.PNMalformedFilterExpressionCategory then
                 subscriberState = "disconnectedUnexpectedly"
                 status.private.updateCategory(status, categories.PNUnexpectedDisconnectCategory)
-            end if 
+            end if
             pn_subscriptionManagerHandleStateChange(status, subscriberState, data)
             status.delete("private")
             status.delete("data")
@@ -556,7 +556,7 @@ sub pn_subscriptionManagerHandleFailedSubscriptionStatus(status as Object, data 
                 privateData.channelGroups = []
                 privateData.presenceChannelGroups = []
             end if
-            status.private.updateCategory(status, categories.PNUnexpectedDisconnectCategory) 
+            status.private.updateCategory(status, categories.PNUnexpectedDisconnectCategory)
             privateData.heartbeatManager.stopHeartbeatIfPossible()
             pn_subscriptionManagerHandleStateChange(status, "disconnectedUnexpectedly", data)
             status.delete("private")
@@ -565,7 +565,7 @@ sub pn_subscriptionManagerHandleFailedSubscriptionStatus(status as Object, data 
     end if
 end sub
 
-sub pn_subscriptionManagerHandleSubscriptionToken(status as Object, data as Object)
+sub pn_subscriptionManagerHandleSubscriptionToken(status as object, data as object)
     initial = data.initialSubscribe
     privateData = data.context.private
     configuration = privateData.config
@@ -573,23 +573,23 @@ sub pn_subscriptionManagerHandleSubscriptionToken(status as Object, data as Obje
     timetoken = status.data.timetoken
     region = status.data.region
     shouldAcceptNewTimeToken = true
-    shouldOverrideTimeToken = initial = true AND PNObject(overrideTimetoken).default("0") > "0"
-    
+    shouldOverrideTimeToken = initial = true and PNObject(overrideTimetoken).default("0") > "0"
+
     if initial = true then
         ' 'keepTimeTokenOnListChange' property should never allow to reset time tokens in
         ' case if there is a few more subscribe requests is waiting for their turn to be sent.
         shouldUseLastTimetoken = configuration.keepTimeTokenOnListChange = true
         if shouldUseLastTimetoken = false then
-            shouldUseLastTimetoken = configuration.restoreSubscription = true AND configuration.catchUpOnSubscriptionRestore = true
+            shouldUseLastTimetoken = configuration.restoreSubscription = true and configuration.catchUpOnSubscriptionRestore = true
         end if
-        shouldUseLastTimeToken = shouldUseLastTimeToken = true AND shouldOverrideTimeToken = false
-        
+        shouldUseLastTimeToken = shouldUseLastTimeToken = true and shouldOverrideTimeToken = false
+
         ' Ensure what we already don't use value from previous time token assigned during
         ' previous sessions.
-        if shouldUseLastTimeToken = true AND PNObject(privateData.lastTimeToken).default("0") > "0" then
+        if shouldUseLastTimeToken = true and PNObject(privateData.lastTimeToken).default("0") > "0" then
             shouldAcceptNewTimeToken = false
-            
-            ' Swap time tokens to catch up on events which happened while client changed channels 
+
+            ' Swap time tokens to catch up on events which happened while client changed channels
             ' and groups list configuration.
             privateData.currentTimeToken = privateData.lastTimeToken
             privateData.lastTimeToken = "0"
@@ -597,11 +597,11 @@ sub pn_subscriptionManagerHandleSubscriptionToken(status as Object, data as Obje
             privateData.lastTimeTokenRegion = invalid
         end if
     end if
-    
+
     ' Ensure what client won't handle delayed requests. It is impossible to have non-initial
     ' subscription while current time token report 0.
-    if initial = false AND PNObject(privateData.currentTimeToken).default("0") = "0" then shouldAcceptNewTimeToken = false
-    
+    if initial = false and PNObject(privateData.currentTimeToken).default("0") = "0" then shouldAcceptNewTimeToken = false
+
     if shouldAcceptNewTimeToken then
         if PNObject(privateData.currentTimeToken).default("0") > "0" then
             privateData.lastTimeToken = privateData.currentTimeToken
@@ -615,29 +615,19 @@ sub pn_subscriptionManagerHandleSubscriptionToken(status as Object, data as Obje
     privateData.overrideTimetoken = invalid
 end sub
 
-sub pn_subscriptionManagerHandleLiveFeedEvents(status as Object, data as Object)
+sub pn_subscriptionManagerHandleLiveFeedEvents(status as object, data as object)
     initial = data.initialSubscribe
     events = PNObject(status).valueAtKeyPath("private.response.events")
-    d1 = {channel:"ch1",subscription:"ch1",message:{hello:["there from brightscript"]},timetoken:"14801089687362522"}
-    d2 = {channel:"ch2",subscription:"ch2",message:{hello:["there from brightscript"]},timetoken:"14801089687362542"}
-    d3 = {channel:"ch1",subscription:"ch1",message:{hello:["there from brightscript"]},timetoken:"14801089687362542"}
-    d4 = {channel:"ch3",subscription:"ch3",message:{hello:["there from brightscript"]},timetoken:"14801089687362642"}
-    d5 = {channel:"ch1",subscription:"ch1",message:{hello:["there from brightscript"]},timetoken:"14801089687362538"}
-    d6 = {channel:"ch4",subscription:"ch4",message:{hello:["there from brightscript"]},timetoken:"14801089687362582"}
-    d7 = {channel:"ch1",subscription:"ch1",message:{hello:["there from brightscript"]},timetoken:"14801089687362542"}
-    d8 = {channel:"ch4",subscription:"ch4",message:{hello:["there from brightscript"]},timetoken:"14801089687362562"}
-    d9 = {channel:"ch5",subscription:"ch5",message:{hello:["there from brightscript"]},timetoken:"14801089687362532"}
-    events = [d1, d2, d3, d4, d5, d6, d7, d8, d9]
     requestMessageCountThreshold = data.context.private.config.requestMessageCountThreshold
     if PNArray(events).isEmpty() = false then
         eventsCount = events.count()
-        
-        if data.initialSubscribe = true AND data.overrideTimeToken <> invalid AND data.overrideTimeToken > "0" then
+
+        if data.initialSubscribe = true and data.overrideTimeToken <> invalid and data.overrideTimeToken > "0" then
             data.context.private.clearCacheFromMessagesNewerThan(data.overrideTimeToken)
         end if
         data.context.private.deDuplicateMessages(events)
-        
-        if requestMessageCountThreshold > 0 AND eventsCount >= requestMessageCountThreshold then
+
+        if requestMessageCountThreshold > 0 and eventsCount >= requestMessageCountThreshold then
             exceedStatus = status.private.copyWithMutatedData(status, invalid)
             exceedStatus.private.updateCategory(exceedStatus, PNStatusCategory().PNRequestMessageCountExceededCategory)
             exceedStatus.data.delete("region")
@@ -645,14 +635,14 @@ sub pn_subscriptionManagerHandleLiveFeedEvents(status as Object, data as Object)
             listenerManager = data.context.private.listenerManager
             listenerManager.announceStatus(exceedStatus)
         end if
-    
+
         for each evt in events
             isPresenceEvent = evt.presenceEvent <> invalid
             if isPresenceEvent = true then
                 if evt.subscription <> invalid then evt.subscription = evt.subscription.replace("-pnpres", "")
                 if evt.channel <> invalid then evt.channel = evt.channel.replace("-pnpres", "")
             end if
-            
+
             if isPresenceEvent = true then
                 presenceEvent = PNPresenceEventResult(status, evt)
                 pn_subscriptionManagerAppendSubscriberInformation(presenceEvent, data)
@@ -664,15 +654,15 @@ sub pn_subscriptionManagerHandleLiveFeedEvents(status as Object, data as Object)
             end if
         end for
     end if
-    
+
     serviceResponse = PNObject(status).valueAtKeyPath("private.response")
     if serviceResponse <> invalid then
         if data.initialSubscribe = true then pn_subscriptionManagerAppendSubscriberInformation(status, data)
-        status.private.updateData(status, {timetoken: serviceResponse.timetoken, region: serviceResponse.region})
+        status.private.updateData(status, { timetoken: serviceResponse.timetoken, region: serviceResponse.region })
     end if
 end sub
 
-sub pn_subscriptionManagerHandleNewMessage(messageStatus = invalid as Dynamic, data = invalid as Dynamic)
+sub pn_subscriptionManagerHandleNewMessage(messageStatus = invalid as dynamic, data = invalid as dynamic)
     errorStatus = invalid
     if messageStatus <> invalid then
         if PNObject(PNObject(messageStatus).valueAtKeyPath("private.response.decryptError")).default(false) = true then
@@ -691,12 +681,12 @@ sub pn_subscriptionManagerHandleNewMessage(messageStatus = invalid as Dynamic, d
             errorStatus.delete("data")
         end if
     end if
-    
+
     listenerManager = data.context.private.listenerManager
     if errorStatus <> invalid then listenerManager.announceStatus(errorStatus) else listenerManager.announceMessage(messageStatus)
 end sub
 
-sub pn_subscriptionManagerHandleNewPresenceEvent(presenceEvent = invalid as Dynamic, data = invalid as Dynamic)
+sub pn_subscriptionManagerHandleNewPresenceEvent(presenceEvent = invalid as dynamic, data = invalid as dynamic)
     privateData = data.context.private
     if PNObject(presenceEvent).valueAtKeyPath("data.presenceEvent") = "state-change" then
         if PNObject(presenceEvent).valueAtKeyPath("data.presence.uuid") = privateData.config.uuid then
@@ -707,7 +697,7 @@ sub pn_subscriptionManagerHandleNewPresenceEvent(presenceEvent = invalid as Dyna
     privateData.listenerManager.announcePresence(presenceEvent)
 end sub
 
-sub pn_subscriptionManagerHandleStateChange(status = invalid as Dynamic, state = "initialized" as String, data = invalid as Dynamic)
+sub pn_subscriptionManagerHandleStateChange(status = invalid as dynamic, state = "initialized" as string, data = invalid as dynamic)
     privateData = data.context.private
     category = PNStatusCategory().PNUnknownCategory
     targetState = state
@@ -715,17 +705,17 @@ sub pn_subscriptionManagerHandleStateChange(status = invalid as Dynamic, state =
 
     if targetState = "connected" then
         privateData.mayRequireSubscriptionRestore = false
-        shouldHandleTransition = privateData.state = "initialized" OR privateData.state = "disconnected" OR privateData.state = "connected"
+        shouldHandleTransition = privateData.state = "initialized" or privateData.state = "disconnected" or privateData.state = "connected"
         if shouldHandleTransition = false then shouldHandleTransition = privateData.state = "accessRightsError"
         category = PNStatusCategory().PNConnectedCategory
-        if shouldHandleTransition = false AND privateData.state = "disconnectedUnexpectedly" then
+        if shouldHandleTransition = false and privateData.state = "disconnectedUnexpectedly" then
             targetState = "connected"
             category = PNStatusCategory().PNReconnectedCategory
             shouldHandleTransition = true
         end if
-    else if targetState = "disconnected" OR targetState = "disconnectedUnexpectedly" then
-        shouldHandleTransition = privateData.state = "initialized" OR privateData.state = "connected" OR privateData.state = "disconnectedUnexpectedly"
-        shouldHandleTransition = shouldHandleTransition = true OR targetState = "disconnectedUnexpectedly" AND targetState = privateData.state
+    else if targetState = "disconnected" or targetState = "disconnectedUnexpectedly" then
+        shouldHandleTransition = privateData.state = "initialized" or privateData.state = "connected" or privateData.state = "disconnectedUnexpectedly"
+        shouldHandleTransition = shouldHandleTransition = true or targetState = "disconnectedUnexpectedly" and targetState = privateData.state
         if targetState = "disconnected" then
             category = PNStatusCategory().PNDisconnectedCategory
         else
@@ -742,7 +732,7 @@ sub pn_subscriptionManagerHandleStateChange(status = invalid as Dynamic, state =
         shouldHandleTransition = true
         category = PNStatusCategory().PNMalformedFilterExpressionCategory
     end if
-    
+
     if shouldHandleTransition then
         privateData.state = targetState
         targetStatus = status
@@ -768,7 +758,7 @@ end sub
 ' status  Reference on API calling status object.
 ' data    Reference on object which contain information which is required to retry API call.
 '
-sub pn_subscriptionManagerUnsubscribeHandler(status = invalid as Dynamic, data = {} as Object)
+sub pn_subscriptionManagerUnsubscribeHandler(status = invalid as dynamic, data = {} as object)
     emptyRequest = PNRequest()
     emptyRequest.setUserInfo({
         operation: PNOperationType().PNUnsubscribeOperation
@@ -780,9 +770,9 @@ sub pn_subscriptionManagerUnsubscribeHandler(status = invalid as Dynamic, data =
     if PNObject(data.params.informingListener).default(true) = true then
         pn_subscriptionManagerHandleStateChange(successStatus, "disconnected", data)
     end if
-    
+
     listChanged = PNArray(data.allObjects).isEqualContent(data.context.private.allObjects()) = false
-    if  PNObject(data.params.subscribeOnRest).default(true) = true AND data.context.private.allObjects().count() > 0 AND listChanged = false then
+    if PNObject(data.params.subscribeOnRest).default(true) = true and data.context.private.allObjects().count() > 0 and listChanged = false then
         data.context.private.readyForNextSubscriptionLoop = true
         data.context.private.nextSubscriptionLoopAsinitial = true
     else if data.callback <> invalid then
@@ -791,21 +781,21 @@ sub pn_subscriptionManagerUnsubscribeHandler(status = invalid as Dynamic, data =
 end sub
 
 ' brief:      Handle retry timer fire.
-' discussion: If retry handler has been called it mean what client still wasn't able to restore 
-'             subscription and repeat attempt. Handler doesn't call client subscribe method 
-'             directly, to eliminate stack overflow possibility. 
+' discussion: If retry handler has been called it mean what client still wasn't able to restore
+'             subscription and repeat attempt. Handler doesn't call client subscribe method
+'             directly, to eliminate stack overflow possibility.
 '
-' callbackData  Reference on object which contain 'context' (reference on actual subscribe manager 
+' callbackData  Reference on object which contain 'context' (reference on actual subscribe manager
 '               which started it) which will allow to set corresponding flags.
 '
-sub pn_subscriptionManagerHandleRetryTimer(callbackData as Object)
+sub pn_subscriptionManagerHandleRetryTimer(callbackData as object)
     privateData = callbackData.context
     privateData.retryTimer = invalid
     privateData.nextSubscriptionLoopAsinitial = false
     privateData.shouldRetrySubscription = true
 end sub
 
-sub pn_subscriptionManagerAppendSubscriberInformation(status as Object, data as Object)
+sub pn_subscriptionManagerAppendSubscriberInformation(status as object, data as object)
     privateData = data.context.private
     status.currentTimetoken = privateData.currentTimetoken
     status.lastTimeToken = privateData.lastTimeToken
